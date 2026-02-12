@@ -8,7 +8,7 @@
     <Description>Library to create DTO classes for affolterNET.Data</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>SQL, DB, Generate, Dto, Code, C#</PackageTags>
-    <RepositoryUrl>https://github.com/Mcafee123/affolterNET.Data</RepositoryUrl>
+    <RepositoryUrl>https://github.com/affolterNET/affolterNET.Data</RepositoryUrl>
     <ProjectGuid>024E3895-4BC1-4A57-938A-009FFF961644</ProjectGuid>
     <IsPackable>true</IsPackable>
     <Authors>Martin Affolter</Authors>
