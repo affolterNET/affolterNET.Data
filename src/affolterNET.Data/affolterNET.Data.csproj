@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <PackageId>affolterNET.Data</PackageId>
     <Authors>affolter.NET GmbH</Authors>
     <Company>affolter.NET GmbH</Company>
@@ -11,6 +11,7 @@
     <RepositoryUrl>https://github.com/affolterNET/affolterNET.Data</RepositoryUrl>
     <ProjectGuid>7F8BACB2-B376-4713-B2FC-8C3C0F089D9C</ProjectGuid>
     <UserSecretsId>eeff2dd1-fe6c-40f0-a5c6-e551d9b1b813</UserSecretsId>
+    <Version>3.0.0</Version>
     <IsPackable>true</IsPackable>
     <Authors>Martin Affolter</Authors>
     <Company>affolter.NET GmbH</Company>
@@ -19,13 +20,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.143" />
+    <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
-    <PackageReference Include="Serilog" Version="2.10.0" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0-preview.1.25080.5" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0-preview.1.25080.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0-preview.1.25080.5" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
+    <PackageReference Include="Npgsql" Version="9.0.3" />
   </ItemGroup>
 
 </Project>

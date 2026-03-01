@@ -16,9 +16,14 @@ public class HistoryLog: IUpgradeLog
         _user = user;
     }
     
-    public void WriteInformation(string format, params object[] args)
+    public void LogTrace(string format, params object[] args)
+    { }
+
+    public void LogDebug(string format, params object[] args)
+    { }
+
+    public void LogInformation(string format, params object[] args)
     {
-        var text = format;
         if (format.StartsWith("Executing Database Server script '{0}'"))
         {
             if (args.Length < 1 || args.FirstOrDefault() == null)
@@ -37,10 +42,13 @@ public class HistoryLog: IUpgradeLog
         }
     }
 
-    public void WriteError(string format, params object[] args)
+    public void LogWarning(string format, params object[] args)
     { }
 
-    public void WriteWarning(string format, params object[] args)
+    public void LogError(string format, params object[] args)
+    { }
+
+    public void LogError(Exception ex, string format, params object[] args)
     { }
 
     private string ReadContents(string fileName)

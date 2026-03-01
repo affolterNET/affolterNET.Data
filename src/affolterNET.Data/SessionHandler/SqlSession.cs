@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using affolterNET.Data.Interfaces;
 using affolterNET.Data.Interfaces.SessionHandler;
 
 namespace affolterNET.Data.SessionHandler
@@ -9,9 +9,9 @@ namespace affolterNET.Data.SessionHandler
     {
         private bool _disposed;
 
-        public SqlSession(string connectionString)
+        public SqlSession(IDbConnectionFactory connectionFactory)
         {
-            Connection = new SqlConnection(connectionString);
+            Connection = connectionFactory.CreateConnection();
             Connection.Open();
         }
 

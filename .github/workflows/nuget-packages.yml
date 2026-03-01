@@ -1,0 +1,292 @@
+name: Build and Publish NuGet Packages
+
+on:
+  push:
+    branches: [ develop, main ]
+    paths:
+      - '**/*.csproj'
+      - '**/*.cs'
+      - '.github/workflows/nuget-packages.yml'
+  workflow_dispatch:
+    inputs:
+      publish_to_nuget:
+        description: 'Publish to NuGet.org'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  BUILD_CONFIGURATION: 'Release'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  # Job 1: Build and test (with version management)
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should_publish: ${{ steps.publish-check.outputs.should_publish }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get and manage version
+      id: version
+      run: |
+        # Get current version from project file
+        CURRENT_VERSION=$(grep '<Version>' src/affolterNET.Data/affolterNET.Data.csproj | sed 's/.*<Version>\(.*\)<\/Version>.*/\1/' | tr -d ' ')
+        echo "Found current version: '$CURRENT_VERSION'"
+
+        if [ -z "$CURRENT_VERSION" ]; then
+          echo "No version found in project file, using default version 3.0.0"
+          CURRENT_VERSION="3.0.0"
+        fi
+
+        echo "Current version: $CURRENT_VERSION"
+
+        # On develop branch, bump the version
+        if [ "${{ github.ref }}" == "refs/heads/develop" ] && [ "${{ github.event_name }}" == "push" ]; then
+          MAJOR=$(echo "$CURRENT_VERSION" | cut -d'.' -f1)
+          MINOR=$(echo "$CURRENT_VERSION" | cut -d'.' -f2)
+          PATCH=$(echo "$CURRENT_VERSION" | cut -d'.' -f3)
+
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+
+          echo "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
+
+          # Update version in all 4 packable project files
+          for csproj in src/affolterNET.Data/affolterNET.Data.csproj \
+                        src/affolterNET.Data.DbUp/affolterNET.Data.DbUp.csproj \
+                        src/affolterNET.Data.DtoHelper/affolterNET.Data.DtoHelper.csproj \
+                        src/affolterNET.Data.TestHelpers/affolterNET.Data.TestHelpers.csproj; do
+            sed -i "s/<Version>.*<\/Version>/<Version>$NEW_VERSION<\/Version>/g" "$csproj"
+          done
+
+          echo "Updated project versions:"
+          grep -rH "<Version>" src/affolterNET.Data*/affolterNET.Data*.csproj
+
+          # Commit changes
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          git add src/affolterNET.Data/affolterNET.Data.csproj \
+                  src/affolterNET.Data.DbUp/affolterNET.Data.DbUp.csproj \
+                  src/affolterNET.Data.DtoHelper/affolterNET.Data.DtoHelper.csproj \
+                  src/affolterNET.Data.TestHelpers/affolterNET.Data.TestHelpers.csproj
+          if git diff --staged --quiet; then
+            echo "No version changes to commit"
+          else
+            git commit -m "chore: bump version to $NEW_VERSION"
+            git push origin develop
+            echo "Version bumped to $NEW_VERSION on develop branch"
+          fi
+
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        else
+          echo "Using current version: $CURRENT_VERSION"
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Check if should publish
+      id: publish-check
+      run: |
+        if [ "${{ github.ref }}" == "refs/heads/main" ] && [ "${{ github.event_name }}" == "push" ]; then
+          echo "should_publish=true" >> $GITHUB_OUTPUT
+          echo "Will publish packages (main branch push)"
+        else
+          echo "should_publish=false" >> $GITHUB_OUTPUT
+          echo "Will not publish packages (not main branch push)"
+        fi
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore src/affolterNET.Data.sln
+
+    - name: Build solution
+      run: |
+        echo "Building with version: ${{ steps.version.outputs.version }}"
+        dotnet build src/affolterNET.Data.sln --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+    - name: Run unit tests
+      run: |
+        echo "Running unit tests..."
+        for testproj in src/Test/*/*.Test.csproj; do
+          echo "Testing $testproj"
+          dotnet test "$testproj" --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --logger trx --results-directory ./test-results --filter "Category!=Integration"
+        done
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: ./test-results/*.trx
+
+  # Job 2: Pack and publish (only on main branch push)
+  pack-and-publish:
+    needs: [build-and-test]
+    runs-on: ubuntu-latest
+    if: |
+      needs.build-and-test.outputs.should_publish == 'true' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_to_nuget == 'true')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore src/affolterNET.Data.sln
+
+    - name: Build all packable projects
+      run: |
+        echo "Building packable projects with project references..."
+        dotnet build src/affolterNET.Data/affolterNET.Data.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+        dotnet build src/affolterNET.Data.DbUp/affolterNET.Data.DbUp.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+        dotnet build src/affolterNET.Data.DtoHelper/affolterNET.Data.DtoHelper.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+        dotnet build src/affolterNET.Data.TestHelpers/affolterNET.Data.TestHelpers.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+    - name: Pack NuGet packages
+      run: |
+        VERSION="${{ needs.build-and-test.outputs.version }}"
+        echo "Packing packages with version $VERSION"
+
+        # Pack in dependency order: Data first, then dependents
+        dotnet pack src/affolterNET.Data/affolterNET.Data.csproj \
+          --configuration ${{ env.BUILD_CONFIGURATION }} \
+          --no-restore \
+          --no-build \
+          --output ./packages \
+          --include-symbols \
+          --include-source \
+          -p:SymbolPackageFormat=snupkg
+
+        dotnet pack src/affolterNET.Data.DbUp/affolterNET.Data.DbUp.csproj \
+          --configuration ${{ env.BUILD_CONFIGURATION }} \
+          --no-restore \
+          --no-build \
+          --output ./packages \
+          --include-symbols \
+          --include-source \
+          -p:SymbolPackageFormat=snupkg
+
+        dotnet pack src/affolterNET.Data.DtoHelper/affolterNET.Data.DtoHelper.csproj \
+          --configuration ${{ env.BUILD_CONFIGURATION }} \
+          --no-restore \
+          --no-build \
+          --output ./packages \
+          --include-symbols \
+          --include-source \
+          -p:SymbolPackageFormat=snupkg
+
+        dotnet pack src/affolterNET.Data.TestHelpers/affolterNET.Data.TestHelpers.csproj \
+          --configuration ${{ env.BUILD_CONFIGURATION }} \
+          --no-restore \
+          --no-build \
+          --output ./packages \
+          --include-symbols \
+          --include-source \
+          -p:SymbolPackageFormat=snupkg
+
+        echo "Created packages:"
+        ls -la ./packages/
+
+    - name: Upload packages as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: ./packages/*.nupkg
+
+    - name: Upload symbol packages as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-symbol-packages
+        path: ./packages/*.snupkg
+
+    - name: Publish to NuGet.org
+      run: |
+        echo "Publishing packages to NuGet.org..."
+        for package in ./packages/affolterNET.Data*.nupkg; do
+          if [[ $package == *.snupkg ]]; then
+            continue
+          fi
+
+          echo "Publishing $package"
+          dotnet nuget push "$package" \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+        done
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+    - name: Create and push git tag
+      run: |
+        VERSION="${{ needs.build-and-test.outputs.version }}"
+        TAG_NAME="v$VERSION"
+
+        echo "Creating tag: $TAG_NAME"
+
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+        git tag -a "$TAG_NAME" -m "Release $TAG_NAME
+
+        NuGet Packages Published:
+        - affolterNET.Data v$VERSION
+        - affolterNET.Data.DbUp v$VERSION
+        - affolterNET.Data.DtoHelper v$VERSION
+        - affolterNET.Data.TestHelpers v$VERSION
+
+        NuGet Gallery: https://www.nuget.org/profiles/affolterNET
+
+        Installation:
+        dotnet add package affolterNET.Data --version $VERSION
+        dotnet add package affolterNET.Data.DbUp --version $VERSION
+        dotnet add package affolterNET.Data.DtoHelper --version $VERSION
+        dotnet add package affolterNET.Data.TestHelpers --version $VERSION"
+
+        git push origin "$TAG_NAME"
+
+        echo "Tag $TAG_NAME created and pushed to GitHub"
+
+    - name: Create release summary
+      run: |
+        VERSION="${{ needs.build-and-test.outputs.version }}"
+        TAG_NAME="v$VERSION"
+        echo "## NuGet Packages Published" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "**Tag:** [$TAG_NAME](https://github.com/${{ github.repository }}/releases/tag/$TAG_NAME)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Published Packages:" >> $GITHUB_STEP_SUMMARY
+        echo "- [affolterNET.Data](https://www.nuget.org/packages/affolterNET.Data/$VERSION)" >> $GITHUB_STEP_SUMMARY
+        echo "- [affolterNET.Data.DbUp](https://www.nuget.org/packages/affolterNET.Data.DbUp/$VERSION)" >> $GITHUB_STEP_SUMMARY
+        echo "- [affolterNET.Data.DtoHelper](https://www.nuget.org/packages/affolterNET.Data.DtoHelper/$VERSION)" >> $GITHUB_STEP_SUMMARY
+        echo "- [affolterNET.Data.TestHelpers](https://www.nuget.org/packages/affolterNET.Data.TestHelpers/$VERSION)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Installation:" >> $GITHUB_STEP_SUMMARY
+        echo '```bash' >> $GITHUB_STEP_SUMMARY
+        echo "dotnet add package affolterNET.Data --version $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "dotnet add package affolterNET.Data.DbUp --version $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "dotnet add package affolterNET.Data.DtoHelper --version $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "dotnet add package affolterNET.Data.TestHelpers --version $VERSION" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
