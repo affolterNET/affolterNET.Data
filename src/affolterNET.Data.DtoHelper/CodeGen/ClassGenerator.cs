@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using affolterNET.Data.DtoHelper.Database;
+using affolterNET.Data.DtoHelper.Dialect;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace affolterNET.Data.DtoHelper.CodeGen
@@ -8,17 +9,20 @@ namespace affolterNET.Data.DtoHelper.CodeGen
     {
         private readonly List<MemberDeclarationSyntax> _list;
         private readonly Table _tbl;
+        private readonly ISqlDialect _dialect;
 
-        public ClassGenerator(Table tbl)
+        public ClassGenerator(Table tbl, ISqlDialect dialect)
         {
             _tbl = tbl;
+            _dialect = dialect;
             _list = new List<MemberDeclarationSyntax>();
         }
 
         public ClassDeclarationSyntax Generate(ClassDeclarationSyntax classDeclaration)
         {
             // Table Name
-            var sgTableName = new StringGenerator($"public const string TABLE_NAME = \"[{_tbl.Schema}].[{_tbl.Name}]\";");
+            var tableNameConstant = _dialect.FormatTableNameConstant(_tbl.Schema, _tbl.Name);
+            var sgTableName = new StringGenerator($"public const string TABLE_NAME = \"{tableNameConstant}\";");
             sgTableName.Generate(Add);
 
             // Properties für Attribute
@@ -28,7 +32,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                 sgP.Generate(Add);
             }
 
-            var sgColumnNames = new ColumnNamesGenerator(_tbl);
+            var sgColumnNames = new ColumnNamesGenerator(_tbl, _dialect);
             sgColumnNames.Generate(Add);
 
             if (!_tbl.IsView)
@@ -43,34 +47,34 @@ namespace affolterNET.Data.DtoHelper.CodeGen
             sgTn.Generate(Add);
 
             // SelectGenerator
-            var sgSelect = new SelectGenerator(_tbl);
+            var sgSelect = new SelectGenerator(_tbl, _dialect);
             sgSelect.Generate(Add);
 
             if (!_tbl.IsView)
             {
                 // InsertGenerator
-                var sgInsert = new InsertGenerator(_tbl);
+                var sgInsert = new InsertGenerator(_tbl, _dialect);
                 sgInsert.Generate(Add);
 
                 // UpdateGenerator
-                var sgUpdate = new UpdateGenerator(_tbl);
+                var sgUpdate = new UpdateGenerator(_tbl, _dialect);
                 sgUpdate.Generate(Add);
 
                 // DeleteGenerator
-                var sgDelete = new DeleteGenerator(_tbl);
+                var sgDelete = new DeleteGenerator(_tbl, _dialect);
                 sgDelete.Generate(Add);
-            
+
                 // SaveByIdGenerator
-                var sgSaveById = new SaveByIdGenerator(_tbl);
+                var sgSaveById = new SaveByIdGenerator(_tbl, _dialect);
                 sgSaveById.Generate(Add);
-                
+
                 // Refresh()
                 var sgRefresh = new RefreshGenerator(_tbl);
                 sgRefresh.Generate(Add);
 
                 // GetIdName
                 var sgIdName = new StringGenerator(
-                    $"public string GetIdName() {{ return \"{_tbl.GetPrimaryKeyColumn().Name}\"; }}");
+                    $"public string GetIdName() {{ return \"{_tbl.GetPrimaryKeyColumn().PropertyName}\"; }}");
                 sgIdName.Generate(Add);
 
                 // SetId
@@ -84,7 +88,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                     SetInsertedDate({ dateTime });
                 }}");
                 setInserted.Generate(Add);
-                
+
                 // SetUpdated
                 var setUpdated = new StringGenerator($@"public void SetUpdated(string userName) {{
                     SetUpdatedUser(userName);

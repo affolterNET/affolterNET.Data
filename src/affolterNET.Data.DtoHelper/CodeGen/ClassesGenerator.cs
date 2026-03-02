@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using affolterNET.Data.DtoHelper.Database;
@@ -19,6 +19,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
         public NamespaceDeclarationSyntax Generate(NamespaceDeclarationSyntax ns, Tables tables)
         {
             var cds = new List<MemberDeclarationSyntax>();
+            var dialect = _cfg.SqlDialect;
 
             // dtos
             foreach (var tbl in tables)
@@ -48,10 +49,10 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                     }
                 }
 
-                var cd = new ClassGenerator(tbl);
+                var cd = new ClassGenerator(tbl, dialect);
                 classDeclaration = cd.Generate(classDeclaration);
                 cds.Add(classDeclaration);
-                
+
                 // ListContents - to use contents like Enums
                 var lcCfg = _cfg.TableContents.FirstOrDefault(te => te.TableName.ToLower() == tbl.Name.ToLower() && te.SchemaName.ToLower() == tbl.Schema.ToLower());
                 if (lcCfg != null)

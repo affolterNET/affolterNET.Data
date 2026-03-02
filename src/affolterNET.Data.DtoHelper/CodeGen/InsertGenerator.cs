@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Linq;
 using affolterNET.Data.DtoHelper.Database;
+using affolterNET.Data.DtoHelper.Dialect;
 using affolterNET.Data.Extensions;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -9,10 +10,12 @@ namespace affolterNET.Data.DtoHelper.CodeGen
     public class InsertGenerator
     {
         private readonly Table tbl;
+        private readonly ISqlDialect dialect;
 
-        public InsertGenerator(Table tbl)
+        public InsertGenerator(Table tbl, ISqlDialect dialect)
         {
             this.tbl = tbl;
+            this.dialect = dialect;
         }
 
         public void Generate(Action<MemberDeclarationSyntax> add)
@@ -22,13 +25,19 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                     c => !c.Ignore && !c.IsPkWithAutoincrement() && !c.IsVersionCol() &&
                          !c.IsUpdateTriggerField(true) && !c.IsActiveCol())
                 .Select(c => c.Name).ToList();
+            var tableName = dialect.QuoteTableName(tbl.Schema, tbl.Name);
+            var quoteStyle = dialect.QuoteStyle;
+            var colsJoin = cols.JoinCols(false, quoteStyle);
+            var pkCol = tbl.GetPrimaryKeyColumn();
+            var returning = dialect.FormatInsertReturning(pkCol.Name);
+
             var sg = new StringGenerator(
                 $@"
                 public string GetInsertCommand(bool returnScopeIdentity = false, params string[] excludedColumns) {{
-                    var cols = ""{cols.JoinCols()}"".GetColumns(excludedColumns);
-                    var sql = $""insert into {tbl.Schema}.{tbl.Name} ({{cols.JoinCols()}}) values ({{cols.JoinCols(true)}})"";
+                    var cols = ""{colsJoin}"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.{quoteStyle}, excludedColumns);
+                    var sql = $""insert into {tableName} ({{cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}}) values ({{cols.JoinCols(true, affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}})"";
                     if (returnScopeIdentity) {{
-                        sql += ""; select scope_identity() as id;"";
+                        sql += ""{returning}"";
                     }}
                     return sql;
                 }}

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
 using affolterNET.Data.DtoHelper.Database;
+using affolterNET.Data.DtoHelper.Dialect;
 
 namespace affolterNET.Data.DtoHelper.CodeGen
 {
@@ -68,8 +69,24 @@ namespace affolterNET.Data.DtoHelper.CodeGen
         public List<string> Usings { get; } = new List<string>();
 
         public Func<string?, bool> VersionFunc { get; private set; } = s => false;
-        
+
         public bool InsertedUpdatedDateUtc { get; set; } = true;
+
+        public DatabaseDialect Dialect { get; private set; } = DatabaseDialect.SqlServer;
+
+        private ISqlDialect? _sqlDialect;
+        public ISqlDialect SqlDialect => _sqlDialect ??= Dialect switch
+        {
+            DatabaseDialect.PostgreSql => new PostgreSqlDialect(),
+            _ => new SqlServerDialect()
+        };
+
+        public GeneratorCfg WithDialect(DatabaseDialect dialect)
+        {
+            Dialect = dialect;
+            _sqlDialect = null; // reset cached instance
+            return this;
+        }
 
         public GeneratorCfg WithInsertedUpdatedDateUtc(bool asUtc = true)
         {

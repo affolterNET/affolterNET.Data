@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Data.Common;
-using Microsoft.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using affolterNET.Data.DtoHelper.CodeGen;
+using affolterNET.Data.DtoHelper.Dialect;
 
 namespace affolterNET.Data.DtoHelper.Database
 {
@@ -47,13 +46,12 @@ namespace affolterNET.Data.DtoHelper.Database
 
             try
             {
-                using var conn = new SqlConnection(cfg.ConnString);
+                var dialect = cfg.SqlDialect;
+                using var conn = dialect.CreateConnection(cfg.ConnString!);
                 conn.Open();
 
-                // Assume SQL Server
-                var reader = new SqlServerSchemaReader(tw);
-
-                var result = reader.ReadSchema(conn, cfg);
+                var reader = dialect.CreateSchemaReader(tw);
+                var result = reader.ReadSchema(conn, cfg, dialect);
 
                 // Remove unrequired tables/views
                 for (var i = result.Count - 1; i >= 0; i--)
@@ -94,7 +92,7 @@ namespace affolterNET.Data.DtoHelper.Database
                     .Distinct()
                     .Where(s => !string.IsNullOrWhiteSpace(s))
                     .Select(s => s!);
- 
+
                 return new TablesResultat(schemas) { Tables = result };
             }
             catch (Exception x)

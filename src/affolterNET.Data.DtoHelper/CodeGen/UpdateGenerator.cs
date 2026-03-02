@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
 using affolterNET.Data.DtoHelper.Database;
+using affolterNET.Data.DtoHelper.Dialect;
 using affolterNET.Data.Extensions;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -10,10 +10,12 @@ namespace affolterNET.Data.DtoHelper.CodeGen
     public class UpdateGenerator
     {
         private readonly Table tbl;
+        private readonly ISqlDialect dialect;
 
-        public UpdateGenerator(Table tbl)
+        public UpdateGenerator(Table tbl, ISqlDialect dialect)
         {
             this.tbl = tbl;
+            this.dialect = dialect;
         }
 
         public void Generate(Action<MemberDeclarationSyntax> add)
@@ -24,23 +26,27 @@ namespace affolterNET.Data.DtoHelper.CodeGen
             {
                 if (col.IsVersionCol())
                 {
-                    versionWhere = $" and {col.Name.EnsureSquareBrackets()}=@{col.Name}";
+                    versionWhere = $" and {dialect.QuoteIdentifier(col.Name)}=@{col.PropertyName}";
                 }
 
                 if (col.IsPK)
                 {
-                    updateWhere = $"where {col.Name.EnsureSquareBrackets()}=@{col.Name}";
+                    updateWhere = $"where {dialect.QuoteIdentifier(col.Name)}=@{col.PropertyName}";
                 }
             }
+
             var columns = tbl.AllColumns
                 .Where(
                     c => !c.Ignore && !c.IsPkWithAutoincrement() && !c.IsVersionCol() &&
                          !c.IsInsertTriggerField() && !c.IsActiveCol())
-                .Select(c => c.Name!.StripSquareBrackets()).ToList();
-            
+                .Select(c => c.Name).ToList();
+            var tableName = dialect.QuoteTableName(tbl.Schema, tbl.Name);
+            var quoteStyle = dialect.QuoteStyle;
+            var colsJoin = columns.JoinCols(false, quoteStyle);
+
             var content = $@"
-                var cols = ""{columns.JoinCols()}"".GetColumns(excludedColumns);
-                return $""update {tbl.Schema}.{tbl.Name} set {{cols.JoinForUpdate()}} {updateWhere}{versionWhere}"";
+                var cols = ""{colsJoin}"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.{quoteStyle}, excludedColumns);
+                return $""update {tableName} set {{cols.JoinForUpdate(affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}} {updateWhere}{versionWhere}"";
             ";
             var inner = tbl.IsView
                 ? "throw new InvalidOperationException(\"no updates on views\");"

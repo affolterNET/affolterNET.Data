@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Text;
 using affolterNET.Data.DtoHelper.Database;
@@ -25,7 +25,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                     continue;
                 }
 
-                columnsBuilder.Append($"this.{c.Name} = loaded.{c.Name};");
+                columnsBuilder.Append($"this.{c.PropertyName} = loaded.{c.PropertyName};");
             }
             var columns = columnsBuilder.ToString();
 
@@ -45,7 +45,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                     {columns}
                 }}
             ");
-            
+
             sgReload.Generate(add);
         }
     }

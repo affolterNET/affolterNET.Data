@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Linq;
 using affolterNET.Data.DtoHelper.Database;
+using affolterNET.Data.DtoHelper.Dialect;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace affolterNET.Data.DtoHelper.CodeGen
@@ -8,15 +9,17 @@ namespace affolterNET.Data.DtoHelper.CodeGen
     public class ColumnNamesGenerator
     {
         private readonly Table tbl;
+        private readonly ISqlDialect dialect;
 
-        public ColumnNamesGenerator(Table tbl)
+        public ColumnNamesGenerator(Table tbl, ISqlDialect dialect)
         {
             this.tbl = tbl;
+            this.dialect = dialect;
         }
 
         public void Generate(Action<MemberDeclarationSyntax> add)
         {
-            var cols = tbl.Columns.Select(c => $"public const string {c.PropertyName} = \"[{c.PropertyName}]\";");
+            var cols = tbl.Columns.Select(c => $"public const string {c.PropertyName} = \"{dialect.FormatColumnNameConstant(c.Name)}\";");
             var allCols = string.Join("\", \"", tbl.Columns.Select(c => c.Name));
             var sg1 = new StringGenerator(
                 $@"

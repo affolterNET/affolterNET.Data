@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using affolterNET.Data.Interfaces;
@@ -51,12 +51,21 @@ namespace affolterNET.Data.Extensions
             var id = idProp.GetMethod.Invoke(dto, new object[] { });
             return id?.ToString();
         }
-        
+
         public static IEnumerable<string> GetColumns(this string columnsString, params string[] excludedColumns) {
             var cols = columnsString
                 .Split(",")
                 .Select(s => s.Trim())
                 .Where(s => excludedColumns.All(exc => s.ToLower().StripSquareBrackets() != exc.ToLower().StripSquareBrackets()));
+            return cols;
+        }
+
+        public static IEnumerable<string> GetColumns(this string columnsString, QuoteStyle style, params string[] excludedColumns)
+        {
+            var cols = columnsString
+                .Split(",")
+                .Select(s => s.Trim())
+                .Where(s => excludedColumns.All(exc => s.ToLower().StripQuoting() != exc.ToLower().StripQuoting()));
             return cols;
         }
 
@@ -74,11 +83,32 @@ namespace affolterNET.Data.Extensions
 
             return string.Join(", ", columns);
         }
-        
+
+        public static string JoinCols(this IEnumerable<string> cols, bool withAdd, QuoteStyle style)
+        {
+            var columns = cols.Select(c => c.Trim());
+            if (withAdd)
+            {
+                columns = columns.Select(c => $"@{c.StripQuoting()}");
+            }
+            else
+            {
+                columns = columns.Select(c => c.EnsureQuoting(style));
+            }
+
+            return string.Join(", ", columns);
+        }
+
         public static string JoinForUpdate(this IEnumerable<string> cols)
         {
             var columns = cols.Select(c => c.Trim());
             return string.Join(", ", columns.Select(c => $"{c.EnsureSquareBrackets()}=@{c.StripSquareBrackets()}"));
+        }
+
+        public static string JoinForUpdate(this IEnumerable<string> cols, QuoteStyle style)
+        {
+            var columns = cols.Select(c => c.Trim());
+            return string.Join(", ", columns.Select(c => $"{c.EnsureQuoting(style)}=@{c.StripQuoting()}"));
         }
     }
 }

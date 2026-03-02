@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using affolterNET.Data.DtoHelper.Database;
+using affolterNET.Data.DtoHelper.Dialect;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace affolterNET.Data.DtoHelper.CodeGen
@@ -8,12 +9,14 @@ namespace affolterNET.Data.DtoHelper.CodeGen
     public class SaveByIdGenerator
     {
         private readonly Table tbl;
+        private readonly ISqlDialect dialect;
 
-        public SaveByIdGenerator(Table tbl)
+        public SaveByIdGenerator(Table tbl, ISqlDialect dialect)
         {
             this.tbl = tbl;
+            this.dialect = dialect;
         }
-        
+
         public void Generate(Action<MemberDeclarationSyntax> add)
         {
             var pk = tbl.AllColumns.FirstOrDefault(t => t.IsPK);
@@ -22,24 +25,25 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                 return;
             }
 
+            var tableName = dialect.QuoteTableName(tbl.Schema, tbl.Name);
+            var hasAutoIncrementPk = tbl.GetPrimaryKeyColumn()?.IsAutoIncrement == true;
+            var insertReturnId = hasAutoIncrementPk ? "true" : "false";
+
+            var body = dialect.FormatSaveById(
+                tableName,
+                pk.Name,
+                $"GetUpdateCommand(excludedColumns)",
+                $"GetInsertCommand({insertReturnId}, excludedColumns)",
+                "(select ? GetSelectCommand(1, excludedColumns) : string.Empty)",
+                pk.PropertyName!,
+                hasAutoIncrementPk,
+                true);
+
             var sg = new StringGenerator(
                 $@"
                 public string GetSaveByIdCommand(bool select = false, params string[] excludedColumns)
                 {{
-                    return 
-                        @$""
-                        declare @rowcnt int
-                        if exists (select {pk.Name} from {tbl.Schema}.{tbl.Name} where {pk.Name} = @{pk.Name})
-                            begin
-                                {{GetUpdateCommand(excludedColumns)}}; set @rowcnt = (select @@rowcount);
-                                select '{tbl.Schema}' as [Schema], '{tbl.Name}' as [Table], convert(nvarchar(50), @{pk.Name}) as [Id], case when @rowcnt = 0 then '{{Constants.NoAction}}' else '{{Constants.Updated}}' end as [Action];
-                            end
-                        else
-                            begin
-                                {{GetInsertCommand({(tbl.GetPrimaryKeyColumn()?.IsAutoIncrement == true ? "true" : "false")}, excludedColumns)}}; set @rowcnt = (select @@rowcount);
-                                select '{tbl.Schema}' as [Schema], '{tbl.Name}' as [Table], convert(nvarchar(50), @{pk.Name}) as [Id], case when @rowcnt = 0 then '{{Constants.NoAction}}' else '{{Constants.Inserted}}' end as [Action];
-                            end
-                        {{(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}}"";
+                    {body}
                 }}
             ");
             sg.Generate(add);
