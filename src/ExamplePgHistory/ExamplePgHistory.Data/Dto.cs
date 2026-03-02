@@ -164,7 +164,7 @@ namespace ExamplePgHistory.Data
                         {(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}";
         }
 
-        public example_pg_history_demo_table GetFromDb(IDbConnection conn, IDbTransaction trsact)
+        public example_pg_history_demo_table? GetFromDb(IDbConnection conn, IDbTransaction trsact)
         {
             return conn.QueryFirstOrDefault<example_pg_history_demo_table>(this.GetSelectCommand(1), this, trsact);
         }
@@ -172,6 +172,11 @@ namespace ExamplePgHistory.Data
         public void Reload(IDbConnection conn, IDbTransaction trsact)
         {
             var loaded = this.GetFromDb(conn, trsact);
+            if (loaded == null)
+            {
+                throw new InvalidOperationException("entity not found");
+            }
+
             this.Message = loaded.Message;
             this.Status = loaded.Status;
             this.TypeId = loaded.TypeId;
@@ -349,7 +354,7 @@ namespace ExamplePgHistory.Data
                         {(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}";
         }
 
-        public example_pg_history_demo_table_type GetFromDb(IDbConnection conn, IDbTransaction trsact)
+        public example_pg_history_demo_table_type? GetFromDb(IDbConnection conn, IDbTransaction trsact)
         {
             return conn.QueryFirstOrDefault<example_pg_history_demo_table_type>(this.GetSelectCommand(1), this, trsact);
         }
@@ -357,6 +362,11 @@ namespace ExamplePgHistory.Data
         public void Reload(IDbConnection conn, IDbTransaction trsact)
         {
             var loaded = this.GetFromDb(conn, trsact);
+            if (loaded == null)
+            {
+                throw new InvalidOperationException("entity not found");
+            }
+
             this.Name = loaded.Name;
         }
 

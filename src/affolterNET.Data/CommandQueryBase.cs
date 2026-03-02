@@ -47,7 +47,7 @@ namespace affolterNET.Data
 
         protected object ParamsObject => Params;
 
-        public string? Sql { get; protected set; }
+        public string Sql { get; protected set; } = string.Empty;
 
         protected void AddParams<T>(T paramsObject, Func<string, bool>? predicate = null)
         {
@@ -130,7 +130,10 @@ namespace affolterNET.Data
             do
             {
                 var info = await reader.ReadFirstOrDefaultAsync<SaveInfo>();
-                results.Add(info);
+                if (info != null)
+                {
+                    results.Add(info);
+                }
             } while (!reader.IsConsumed);
 
             return new DataResult<IEnumerable<SaveInfo>>(results);

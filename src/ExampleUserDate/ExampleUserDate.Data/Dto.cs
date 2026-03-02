@@ -175,7 +175,7 @@ namespace ExampleUserDate.Data
                         {(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}";
         }
 
-        public ExampleUserDate_T_DemoTable GetFromDb(IDbConnection conn, IDbTransaction trsact)
+        public ExampleUserDate_T_DemoTable? GetFromDb(IDbConnection conn, IDbTransaction trsact)
         {
             return conn.QueryFirstOrDefault<ExampleUserDate_T_DemoTable>(this.GetSelectCommand(1), this, trsact);
         }
@@ -183,6 +183,7 @@ namespace ExampleUserDate.Data
         public void Reload(IDbConnection conn, IDbTransaction trsact)
         {
             var loaded = this.GetFromDb(conn, trsact);
+            if (loaded == null) { throw new InvalidOperationException("entity not found"); }
             this.Message = loaded.Message;
             this.Status = loaded.Status;
             this.Type = loaded.Type;
@@ -361,7 +362,7 @@ namespace ExampleUserDate.Data
                         {(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}";
         }
 
-        public ExampleUserDate_T_DemoTableType GetFromDb(IDbConnection conn, IDbTransaction trsact)
+        public ExampleUserDate_T_DemoTableType? GetFromDb(IDbConnection conn, IDbTransaction trsact)
         {
             return conn.QueryFirstOrDefault<ExampleUserDate_T_DemoTableType>(this.GetSelectCommand(1), this, trsact);
         }
@@ -369,6 +370,7 @@ namespace ExampleUserDate.Data
         public void Reload(IDbConnection conn, IDbTransaction trsact)
         {
             var loaded = this.GetFromDb(conn, trsact);
+            if (loaded == null) { throw new InvalidOperationException("entity not found"); }
             this.Name = loaded.Name;
         }
 

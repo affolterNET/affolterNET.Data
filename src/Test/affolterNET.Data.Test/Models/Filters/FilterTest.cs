@@ -16,7 +16,7 @@ namespace affolterNET.Data.Test.Models.Filters
                 return inst;
             }
 
-            return JsonConvert.DeserializeObject<T>(json);
+            return JsonConvert.DeserializeObject<T>(json)!;
         }
 
         [Theory]

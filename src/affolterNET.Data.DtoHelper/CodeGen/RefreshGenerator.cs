@@ -31,7 +31,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
             var sgGetFromDb = new StringGenerator(
                 $@"
-                public {tbl.ObjectName} GetFromDb(IDbConnection conn, IDbTransaction trsact) {{
+                public {tbl.ObjectName}? GetFromDb(IDbConnection conn, IDbTransaction trsact) {{
                     return conn.QueryFirstOrDefault<{tbl.ObjectName}>(this.GetSelectCommand(1), this, trsact);
                 }}
 
@@ -42,6 +42,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                 $@"
                 public void Reload(IDbConnection conn, IDbTransaction trsact) {{
                     var loaded = this.GetFromDb(conn, trsact);
+                    if (loaded == null) {{ throw new InvalidOperationException(""entity not found""); }}
                     {columns}
                 }}
             ");

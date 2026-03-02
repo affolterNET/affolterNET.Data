@@ -1,3 +1,4 @@
+using System;
 using System.Data;
 using System.Threading.Tasks;
 using affolterNET.Data.Interfaces;
@@ -17,7 +18,8 @@ namespace affolterNET.Data.Commands
 
         public override async Task<DataResult<T>> ExecuteAsync(IDbConnection connection, IDbTransaction transaction)
         {
-            var firstOrDefault = await connection.QueryFirstOrDefaultAsync<T>(Sql, ParamsObject, transaction);
+            var firstOrDefault = await connection.QueryFirstOrDefaultAsync<T>(Sql, ParamsObject, transaction)
+                                 ?? throw new InvalidOperationException("SaveAndReload returned no result");
             var result = new DataResult<T>(firstOrDefault)
             {
                 SqlCommand = ToString()

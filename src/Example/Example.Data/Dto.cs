@@ -164,7 +164,7 @@ namespace Example.Data
                         {(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}";
         }
 
-        public Example_T_DemoTable GetFromDb(IDbConnection conn, IDbTransaction trsact)
+        public Example_T_DemoTable? GetFromDb(IDbConnection conn, IDbTransaction trsact)
         {
             return conn.QueryFirstOrDefault<Example_T_DemoTable>(this.GetSelectCommand(1), this, trsact);
         }
@@ -172,6 +172,7 @@ namespace Example.Data
         public void Reload(IDbConnection conn, IDbTransaction trsact)
         {
             var loaded = this.GetFromDb(conn, trsact);
+            if (loaded == null) { throw new InvalidOperationException("entity not found"); }
             this.DateEndTest = loaded.DateEndTest;
             this.DateTest = loaded.DateTest;
             this.Message = loaded.Message;
@@ -344,7 +345,7 @@ namespace Example.Data
                         {(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}";
         }
 
-        public Example_T_DemoTableType GetFromDb(IDbConnection conn, IDbTransaction trsact)
+        public Example_T_DemoTableType? GetFromDb(IDbConnection conn, IDbTransaction trsact)
         {
             return conn.QueryFirstOrDefault<Example_T_DemoTableType>(this.GetSelectCommand(1), this, trsact);
         }
@@ -352,6 +353,7 @@ namespace Example.Data
         public void Reload(IDbConnection conn, IDbTransaction trsact)
         {
             var loaded = this.GetFromDb(conn, trsact);
+            if (loaded == null) { throw new InvalidOperationException("entity not found"); }
             this.Name = loaded.Name;
         }
 

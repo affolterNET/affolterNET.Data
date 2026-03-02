@@ -44,7 +44,8 @@ namespace affolterNET.Data.Commands
 
         private async Task<DataResult<SaveInfo>> Transform(SqlMapper.GridReader reader)
         {
-            var saveInfo = await reader.ReadFirstOrDefaultAsync<SaveInfo>();
+            var saveInfo = await reader.ReadFirstOrDefaultAsync<SaveInfo>()
+                           ?? throw new InvalidOperationException("SaveById returned no result");
             if (_select)
             {
                 var dto = reader.Read<T>();

@@ -19,7 +19,7 @@ namespace affolterNET.Data.Test.Models
         {
             var json =
                 "{ GridLayout: { Columns: [ { prefix: '', column: 'ein' }, { prefix: '', column: 'zwei' }, { prefix: '', column: 'drei' } ] } }";
-            var p = JsonConvert.DeserializeObject<SearchParams>(json);
+            var p = JsonConvert.DeserializeObject<SearchParams>(json)!;
             Assert.NotNull(p.GridLayout);
             Assert.NotNull(p.GridLayout.Columns);
             Assert.Equal(3, p.GridLayout.Columns.Count);
@@ -41,7 +41,7 @@ namespace affolterNET.Data.Test.Models
             {
               sortOrder: [ { attribute: { prefix: 'i', column: 'Email' }, desc: true } ]
             }";
-            var p = JsonConvert.DeserializeObject<SearchParams>(json);
+            var p = JsonConvert.DeserializeObject<SearchParams>(json)!;
             Assert.NotNull(p.SortOrder);
             Assert.Single(p.SortOrder);
             Assert.True(p.SortOrder[0].Desc);
