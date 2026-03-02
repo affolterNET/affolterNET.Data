@@ -1,0 +1,30 @@
+services:
+  sqlserver:
+    build:
+      context: .
+      args:
+        DATABASE_PASSWORD: Som3V3ryS3cretP4ssw0rd!
+    container_name: example-db-1436
+    ports:
+      - "1436:1433"
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "Som3V3ryS3cretP4ssw0rd!" -Q "SELECT 1" -b
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  postgres:
+    image: postgres:17
+    container_name: example-pg-5436
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: example
+      POSTGRES_PASSWORD: Som3V3ryS3cretP4ssw0rd!
+    healthcheck:
+      test: pg_isready -U postgres -d example
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s

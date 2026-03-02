@@ -1,83 +1,208 @@
-# Docs
+# affolterNET.Data
+
+Type-safe database access using Commands and Queries with [Dapper](https://github.com/DapperLib/Dapper). Supports **SQL Server** and **PostgreSQL**.
 
 ## Introduction
 
-With this project one can access an SQL Database in a type safe manner using Commands and Queries with [Dapper](https://github.com/DapperLib/Dapper). These Commands and Queries are hand-crafted using all the power of SQL. There are, however, built in helpers to work with a single table.
+With this library you can access a SQL database in a type-safe manner using Commands and Queries. These are hand-crafted using all the power of SQL. There are, however, built-in helpers to work with a single table.
+
+The included **DtoHelper** code generator reads your database schema and produces DTO classes with ready-made SQL strings (SELECT, INSERT, UPDATE, DELETE).
 
 ## Getting Started
 
-1. Create a Database (I usually do this with a Console Application by using SQL Scripts and [DbUp](https://dbup.readthedocs.io/)). Please have a look at the [Example Projects](https://github.com/Mcafee123/affolterNET.Data/tree/main/src). Use "affolterNET.Data.DbUp.Services.UpdateService" to create the db out of SQL scripts. Add a HistoryMode (all scripts or write-operations only) if needed.
-2. Use the same Console App to create DTOs out of the Database ([Example Projects](https://github.com/Mcafee123/affolterNET.Data/tree/main/src)). I usually generate this Dto-File in its own Assembly, where I can also put my Commands and Queries later.
-3. Create Commands and Queries to work with the Database by inheriting from "CommandQueryBase". Every Command and every Query is a class, containing the sql and the necessary parameters. All generated DTOs contain SQL strings to access "their" table for convenience - these SQL strings can be used by your custom commands and queries. Please use a folder named "Commands" to save your write-operations and a folder named "Queries" for read-access to the database (separation - this will help distinguishing between read- and write-operations, it is relevant when using history).
-4. Use ISqlSessionHandler to query the database (simple):
+1. **Create a database** using SQL Scripts and [DbUp](https://dbup.readthedocs.io/). Use `affolterNET.Data.DbUp.Services.UpdateService` to run migrations. Add a HistoryMode (all scripts or write-operations only) if needed.
 
-            var cmd = new YourCustomCommandOrQuery(string parameter1);
-            var result = await sqlSessionHandler.QueryAsync(cmd);
-            return result;
+2. **Generate DTOs** from the database using DtoHelper. The generated file goes into its own assembly where you can also put your Commands and Queries later.
 
-The transaction will be rolled back automatically. Suitable for executing only one command/query.
+3. **Create Commands and Queries** by inheriting from `CommandQueryBase`. Every Command and Query is a class containing SQL and parameters. Generated DTOs contain SQL strings to access their table. Use a folder named `Commands` for write-operations and `Queries` for reads.
 
-or with transaction-support:
+4. **Use ISqlSessionHandler** to query the database:
 
-        var session = sqlSessionHandler.CreateSqlSession();
-        session.Begin();
-        try
-        {
-            var cmd = new YourCustomCommandOrQuery(string parameter1);
-            var result = await sqlSessionHandler.QueryAsync(cmd);
-            session.Commit();
-            return result;
-        }
-        catch
-        {
-            session.Rollback();
-            throw;
-        }
+```csharp
+// Simple (auto-rollback on failure)
+var cmd = new YourCustomCommand(parameter1);
+var result = await sqlSessionHandler.QueryAsync(cmd);
 
-You have to roll back your transaction yourself if the session is created explicitly like above. Suited for running multiple commands/queries in one transaction.
+// With explicit transaction
+var session = sqlSessionHandler.CreateSqlSession();
+session.Begin();
+try
+{
+    var cmd = new YourCustomCommand(parameter1);
+    var result = await sqlSessionHandler.QueryAsync(cmd);
+    session.Commit();
+    return result;
+}
+catch
+{
+    session.Rollback();
+    throw;
+}
+```
+
+## Database Support
+
+| Feature | SQL Server | PostgreSQL |
+|---|---|---|
+| DTO Generation | `[Schema].[Table]` bracket quoting | `"schema"."table"` double-quote quoting |
+| Naming Convention | PascalCase | snake_case (mapped to PascalCase properties) |
+| DbUp Migrations | `DeployChanges.To.SqlDatabase()` | `DeployChanges.To.PostgresqlDatabase()` |
+| Optimistic Concurrency | `rowversion` (automatic) | `integer` column + trigger |
+| Connection | `Microsoft.Data.SqlClient` | `Npgsql` |
+
+### PostgreSQL Setup
+
+Use `.WithDialect(DatabaseDialect.PostgreSql)` in your `GeneratorCfg`:
+
+```csharp
+var cfg = new GeneratorCfg()
+    .WithDialect(DatabaseDialect.PostgreSql)
+    .WithConn(connectionString)
+    .WithTargetFile(targetFile)
+    // ... other config
+```
+
+For DbUp, pass `--postgresql` (or set `PostgreSql = true` on settings):
+
+```csharp
+settings.PostgreSql = true;
+await updateService.UpdateDb(context, settings);
+```
+
+### PostgreSQL Version Column
+
+PostgreSQL has no `rowversion` type. Use an integer column with a trigger instead:
+
+```sql
+CREATE TABLE my_schema.my_table(
+    id uuid NOT NULL PRIMARY KEY,
+    -- ... other columns
+    version_timestamp integer NOT NULL DEFAULT 1
+);
+
+CREATE OR REPLACE FUNCTION my_schema.increment_version()
+RETURNS trigger AS $$
+BEGIN
+    NEW.version_timestamp = OLD.version_timestamp + 1;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_my_table_version
+    BEFORE UPDATE ON my_schema.my_table
+    FOR EACH ROW EXECUTE FUNCTION my_schema.increment_version();
+```
+
+## Docker Setup
+
+Start both SQL Server and PostgreSQL with Docker Compose:
+
+```bash
+cd db
+docker compose up -d --build --wait
+```
+
+This starts:
+- **SQL Server 2019** on port `1436` (user: `sa`)
+- **PostgreSQL 17** on port `5436` (user: `postgres`, database: `example`)
+
+Both use the password `Som3V3ryS3cretP4ssw0rd!`.
+
+To generate all example DTOs:
+
+```bash
+cd db
+./start.sh
+```
+
+## Example Projects
+
+The repository includes example projects demonstrating different feature combinations for both SQL Server and PostgreSQL:
+
+| Feature | SQL Server | PostgreSQL |
+|---|---|---|
+| Basic (with date columns) | Example | ExamplePg |
+| Basic (history-enabled at runtime) | ExampleHistory | ExamplePgHistory |
+| Insert/Update metadata | ExampleUserDate | ExamplePgUserDate |
+| Optimistic concurrency | ExampleVersion | ExamplePgVersion |
+| Version + metadata | ExampleVersionUserDate | ExamplePgVersionUserDate |
+| Version + metadata + history | ExampleVersionUserDateHistory | ExamplePgVersionUserDateHistory |
+
+Each example has two sub-projects:
+- **`.Data`** — Class library containing the generated `Dto.cs`
+- **`.Update`** — Console app with `dbup` and `gen` commands
 
 ## Different Modes
 
-The Examples show different Modes to be enabled:
-
-* simply accessing a table
-* adding some metadata (inserted user, changed user, inserted date changed date)
-* rowversion to prevent overwriting changes when editing the same record by more than one user at the same time
-* history mode to save sql commands and queries in a table of the same or another database.
-
 ### Metadata
 
-Every row can have the four metadata-columns for a user and a date of insertion and a user and a date of change (update). Actiate this by:
+Every row can have four metadata columns for tracking who created/modified a record and when. Activate with:
 
-        GeneratorCfg.WithInsertDate(insDate => insDate == "InsertDate");
-        GeneratorCfg.WithInsertUser(insUser => insUser == "InsertUser");
-        GeneratorCfg.WithUpdateDate(updDate => updDate == "UpdateDate");
-        GeneratorCfg.WithUpdateUser(updUser => updUser == "UpdateUser");
+```csharp
+// SQL Server (PascalCase column names)
+cfg.WithInsertDate(insDate => insDate == "InsertDate");
+cfg.WithInsertUser(insUser => insUser == "InsertUser");
+cfg.WithUpdateDate(updDate => updDate == "UpdateDate");
+cfg.WithUpdateUser(updUser => updUser == "UpdateUser");
 
-The Argument is the column name.
+// PostgreSQL (snake_case column names)
+cfg.WithInsertDate(insDate => insDate == "insert_date");
+cfg.WithInsertUser(insUser => insUser == "insert_user");
+cfg.WithUpdateDate(updDate => updDate == "update_date");
+cfg.WithUpdateUser(updUser => updUser == "update_user");
+```
 
-### Rowversion
+### Optimistic Concurrency (Version)
 
-_Is a data type that exposes automatically generated, unique binary numbers within a database. rowversion is generally used as a mechanism for version-stamping table rows._ See [Microsoft Docs](https://docs.microsoft.com/en-us/sql/t-sql/data-types/rowversion-transact-sql?view=sql-server-ver16).
+Prevents overwriting changes when multiple users edit the same record simultaneously.
 
-This mechanism is supported by checking the version in SQL strings of the DTOs. It is added with:
+**SQL Server:** Uses `rowversion` data type (automatic).
 
-    GeneratorCfg.WithVersion(version => version == "VersionTimestamp")
-The Argument is the column name.
+**PostgreSQL:** Uses an `integer` column with a `BEFORE UPDATE` trigger.
+
+```csharp
+// SQL Server
+cfg.WithVersion(version => version == "VersionTimestamp");
+
+// PostgreSQL
+cfg.WithVersion(version => version == "version_timestamp");
+```
 
 ### History Mode
 
-With history Mode you can create kind of event sourcing-solutions, meaning that you can replay a series of sql commands to restore a previous state of your database later in time. Make sure to also add History Mode (with the same database-table) when using the DbUp-Console App. You will get a single table with all database structure changes and user operations in one place.
+Records SQL commands for replay/audit purposes. Modes:
 
-|Mode|Meaning|
-|-|-|
-| EnumHistoryMode.None                  | No SQL scripts will be recorded (Default)|
-| EnumHistoryMode.All                   | All SQL scripts will be recorded         |
-| EnumHistoryMode.CommandsOnly          | All write-operations will be recorded. Write-operations are automatically assumed if a query is in the commands-namespace/subfolder. If it's in "Queries" (or somewhere else), it is a read-operation for the HistorySaver. This automatism can be overruled by explicitly excluding/including a command or query from history (constructor-parameter of CommandQueryBase "bool excludeFromHistory = true/false")  |
-| EnumHistoryMode.CommandsOnlyAndCheck  | Same as "CommandsOnly", but writes to the console if a script not in "Commands" contains "insert", "update" or "delete".    |
+| Mode | Meaning |
+|---|---|
+| `EnumHistoryMode.None` | No SQL scripts recorded (default) |
+| `EnumHistoryMode.All` | All SQL scripts recorded |
+| `EnumHistoryMode.CommandsOnly` | Write-operations only (based on namespace) |
+| `EnumHistoryMode.CommandsOnlyAndCheck` | Same as CommandsOnly, with console warnings for suspicious reads |
+
+## GeneratorCfg Reference
+
+| Method | Description |
+|---|---|
+| `.WithDialect(DatabaseDialect)` | Set database dialect (SqlServer or PostgreSql) |
+| `.WithConn(string)` | Connection string |
+| `.WithTargetFile(string)` | Output file path for generated DTOs |
+| `.WithNamespace(string)` | Namespace for generated classes |
+| `.WithSchemaExclusion(string)` | Exclude a schema from generation |
+| `.WithTableNameExclusion(string)` | Exclude a specific table |
+| `.WithContentsList(...)` | Generate static lookup class from table data |
+| `.WithInsertDate(Func)` | Mark insert-date columns |
+| `.WithInsertUser(Func)` | Mark insert-user columns |
+| `.WithUpdateDate(Func)` | Mark update-date columns |
+| `.WithUpdateUser(Func)` | Mark update-user columns |
+| `.WithVersion(Func)` | Mark version/concurrency columns |
+| `.WithBaseType(string)` | Base interface for DTOs (default: `IDtoBase`) |
+| `.WithBaseViewType(string)` | Base interface for views (default: `IViewBase`) |
 
 ## Build and Test
 
+```bash
+dotnet build src/affolterNET.Data.sln
+dotnet test src/affolterNET.Data.sln
+```
 
-
-Thanks to Wolfgang for the [workaround](https://www.programmingwithwolfgang.com/azure-devops-publish-nuget/) when publishing NuGet packages from Azure Devops.
+Thanks to Wolfgang for the [workaround](https://www.programmingwithwolfgang.com/azure-devops-publish-nuget/) when publishing NuGet packages from Azure DevOps.

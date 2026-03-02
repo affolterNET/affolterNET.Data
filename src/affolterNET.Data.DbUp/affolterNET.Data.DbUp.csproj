@@ -20,7 +20,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="dbup-core" Version="6.0.3" />
+      <PackageReference Include="dbup-core" Version="6.0.4" />
+      <PackageReference Include="dbup-postgresql" Version="6.0.0" />
       <PackageReference Include="dbup-sqlserver" Version="6.0.0" />
       <PackageReference Include="Spectre.Console" Version="0.49.1" />
       <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />

@@ -36,7 +36,12 @@ public class UpdateService
         [CommandOption("-u|--historyUserName")]
         [DefaultValue("dbup")]
         // ReSharper disable once UnusedAutoPropertyAccessor.Global
-        public string? HistoryUserName { get; set;  } 
+        public string? HistoryUserName { get; set;  }
+
+        [CommandOption("-p|--postgresql")]
+        [DefaultValue(false)]
+        // ReSharper disable once UnusedAutoPropertyAccessor.Global
+        public bool PostgreSql { get; set; }
     }
 
     public async Task<int> UpdateDb(CommandContext context, Settings settings)
@@ -48,10 +53,12 @@ public class UpdateService
         AnsiConsole.MarkupLine($"[orange3]ConnectionString: {connectionString}[/]");
 
         connectionString = builder.ConnectionString;
-        await connectionString.WaitForDbConnectionAsync();
+        await connectionString.WaitForDbConnectionAsync(useNpgsql: settings.PostgreSql);
 
         var ass = Assembly.GetEntryAssembly();
-        var upg = DeployChanges.To.SqlDatabase(connectionString)
+        var upg = (settings.PostgreSql
+                ? DeployChanges.To.PostgresqlDatabase(connectionString)
+                : DeployChanges.To.SqlDatabase(connectionString))
             .WithScriptsEmbeddedInAssembly(ass)
             .LogToConsole();
         if (settings.HistoryMode != EnumHistoryMode.None)
