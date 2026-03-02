@@ -56,7 +56,6 @@ namespace ExamplePgVersionUserDate.Update.Commands
                     .WithUsing("affolterNET.Data.Interfaces")
                     .WithUsing("Dapper")
                     .WithUsing("System.ComponentModel.DataAnnotations")
-                    .WithComment("#pragma warning disable CS8618")
                     .WithComment("// ReSharper disable InconsistentNaming")
                     .WithComment("// ReSharper disable MemberCanBePrivate.Global")
                     .WithComment("// ReSharper disable ClassNeverInstantiated.Global")

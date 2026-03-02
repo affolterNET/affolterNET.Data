@@ -16,7 +16,7 @@ create table ExampleVersionUserDate.T_DemoTable(
     Message nvarchar(1000) not null,
     Type uniqueidentifier
         constraint FK_ExampleVersionUserDate_T_DemoTable_ExampleVersionUserDate_T_DemoTableType
-            foreign key references ExampleVersionUserDate.T_DemoTableType (Id),
+            foreign key (Type) references ExampleVersionUserDate.T_DemoTableType (Id),
     Status nvarchar(50) not null
         constraint DF_T_DemoTable_Status
             default 'auto default',

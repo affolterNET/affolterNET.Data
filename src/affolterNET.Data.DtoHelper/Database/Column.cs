@@ -66,17 +66,12 @@ namespace affolterNET.Data.DtoHelper.Database
 
         public string CheckNullable()
         {
-            var result = string.Empty;
-            if (IsNullable &&
-                (PropertyType != "byte[]") &&
-                (PropertyType != "string") &&
-                (PropertyType != "Microsoft.SqlServer.Types.SqlGeography") &&
-                (PropertyType != "Microsoft.SqlServer.Types.SqlGeometry"))
+            if (IsNullable)
             {
-                result = "?";
+                return "?";
             }
 
-            return result;
+            return string.Empty;
         }
 
         public string WriteProperty(int indent)
@@ -108,6 +103,10 @@ namespace affolterNET.Data.DtoHelper.Database
             if (IsVersionCol() && DataType == "timestamp")
             {
                 defaultValue = " = {0,0,0,0,0,0,0,0};";
+            }
+            else if (!IsNullable && IsReferenceType())
+            {
+                defaultValue = " = null!;";
             }
             var prop = string.Format(
                 "{0}{1}{2}{3}{4}public {5}{6} {7} {{ get; set;}}{8}",
@@ -175,6 +174,14 @@ namespace affolterNET.Data.DtoHelper.Database
 
             setid = string.Format("{0}{1}}}", setid, myIndent);
             return setid;
+        }
+
+        public bool IsReferenceType()
+        {
+            return PropertyType == "string" ||
+                   PropertyType == "byte[]" ||
+                   PropertyType == "Microsoft.SqlServer.Types.SqlGeography" ||
+                   PropertyType == "Microsoft.SqlServer.Types.SqlGeometry";
         }
 
         public bool IsDefaultCol()

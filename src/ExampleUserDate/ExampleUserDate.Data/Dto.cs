@@ -8,7 +8,6 @@ using affolterNET.Data.Interfaces;
 using Dapper;
 using Da = System.ComponentModel.DataAnnotations;
 
-#pragma warning disable CS8618
 // ReSharper disable InconsistentNaming
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable ClassNeverInstantiated.Global
@@ -73,12 +72,12 @@ namespace ExampleUserDate.Data
         [Da.DataType("nvarchar")]
         [Da.MaxLength(1000)]
         [Da.Required]
-        public string Message { get; set; }
+        public string Message { get; set; } = null !;
 
         [Da.DataType("nvarchar")]
         [Da.MaxLength(50)]
         [Da.Required]
-        public string Status { get; set; }
+        public string Status { get; set; } = null !;
 
         [Da.DataType("uniqueidentifier")]
         public Guid? Type { get; set; }
@@ -90,18 +89,29 @@ namespace ExampleUserDate.Data
         [Da.DataType("nvarchar")]
         [Da.MaxLength(1000)]
         [Da.Required]
-        public string InsertUser { get; set; }
+        public string InsertUser { get; set; } = null !;
 
         [Da.DataType("datetime")]
         public DateTime? UpdateDate { get; set; }
 
         [Da.DataType("nvarchar")]
         [Da.MaxLength(1000)]
-        public string UpdateUser { get; set; }
+        public string? UpdateUser { get; set; }
 
-        private static readonly List<string> colNames = new List<string>{"Id", "Message", "Status", "Type", "InsertDate", "InsertUser", "UpdateDate", "UpdateUser"};
+        private static readonly List<string> colNames = new List<string>
+        {
+            "Id",
+            "Message",
+            "Status",
+            "Type",
+            "InsertDate",
+            "InsertUser",
+            "UpdateDate",
+            "UpdateUser"
+        };
         public IEnumerable<string> GetColumnNames() => colNames;
         public static IEnumerable<string> ColNames => colNames;
+
         public static class Cols
         {
             public const string Id = "[Id]";
@@ -126,14 +136,14 @@ namespace ExampleUserDate.Data
 
         public string GetSelectCommand(int maxCount = 1000, params string[] excludedColumns)
         {
-            var cols = "[Id], [Message], [Type], [Status], [InsertDate], [InsertUser], [UpdateDate], [UpdateUser]".GetColumns(excludedColumns);
-            return $"select top({maxCount}) {cols.JoinCols()} from ExampleUserDate.T_DemoTable where (@Id is null or [Id]=@Id)";
+            var cols = "[Id], [Message], [Type], [Status], [InsertDate], [InsertUser], [UpdateDate], [UpdateUser]".GetColumns(affolterNET.Data.Extensions.QuoteStyle.Brackets, excludedColumns);
+            return $"select top({maxCount}) {cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.Brackets)} from [ExampleUserDate].[T_DemoTable] where (@Id is null or [Id]=@Id)";
         }
 
         public string GetInsertCommand(bool returnScopeIdentity = false, params string[] excludedColumns)
         {
-            var cols = "[Id], [Message], [Type], [Status], [InsertDate], [InsertUser]".GetColumns(excludedColumns);
-            var sql = $"insert into ExampleUserDate.T_DemoTable ({cols.JoinCols()}) values ({cols.JoinCols(true)})";
+            var cols = "[Id], [Message], [Type], [Status], [InsertDate], [InsertUser]".GetColumns(affolterNET.Data.Extensions.QuoteStyle.Brackets, excludedColumns);
+            var sql = $"insert into [ExampleUserDate].[T_DemoTable] ({cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.Brackets)}) values ({cols.JoinCols(true, affolterNET.Data.Extensions.QuoteStyle.Brackets)})";
             if (returnScopeIdentity)
             {
                 sql += "; select scope_identity() as id;";
@@ -144,25 +154,25 @@ namespace ExampleUserDate.Data
 
         public string GetUpdateCommand(params string[] excludedColumns)
         {
-            var cols = "[Id], [Message], [Type], [Status], [UpdateDate], [UpdateUser]".GetColumns(excludedColumns);
-            return $"update ExampleUserDate.T_DemoTable set {cols.JoinForUpdate()} where [Id]=@Id";
+            var cols = "[Id], [Message], [Type], [Status], [UpdateDate], [UpdateUser]".GetColumns(affolterNET.Data.Extensions.QuoteStyle.Brackets, excludedColumns);
+            return $"update [ExampleUserDate].[T_DemoTable] set {cols.JoinForUpdate(affolterNET.Data.Extensions.QuoteStyle.Brackets)} where [Id]=@Id";
         }
 
         public string GetDeleteCommand()
         {
-            return "delete from ExampleUserDate.T_DemoTable where Id=@Id";
+            return "delete from [ExampleUserDate].[T_DemoTable] where [Id]=@Id";
         }
 
         public string GetDeleteAllCommand()
         {
-            return "delete from ExampleUserDate.T_DemoTable";
+            return "delete from [ExampleUserDate].[T_DemoTable]";
         }
 
         public string GetSaveByIdCommand(bool select = false, params string[] excludedColumns)
         {
             return @$"
                         declare @rowcnt int
-                        if exists (select Id from ExampleUserDate.T_DemoTable where Id = @Id)
+                        if exists (select Id from [ExampleUserDate].[T_DemoTable] where Id = @Id)
                             begin
                                 {GetUpdateCommand(excludedColumns)}; set @rowcnt = (select @@rowcount);
                                 select 'ExampleUserDate' as [Schema], 'T_DemoTable' as [Table], convert(nvarchar(50), @Id) as [Id], case when @rowcnt = 0 then '{Constants.NoAction}' else '{Constants.Updated}' end as [Action];
@@ -183,7 +193,11 @@ namespace ExampleUserDate.Data
         public void Reload(IDbConnection conn, IDbTransaction trsact)
         {
             var loaded = this.GetFromDb(conn, trsact);
-            if (loaded == null) { throw new InvalidOperationException("entity not found"); }
+            if (loaded == null)
+            {
+                throw new InvalidOperationException("entity not found");
+            }
+
             this.Message = loaded.Message;
             this.Status = loaded.Status;
             this.Type = loaded.Type;
@@ -290,11 +304,16 @@ namespace ExampleUserDate.Data
         [Da.DataType("nvarchar")]
         [Da.MaxLength(1000)]
         [Da.Required]
-        public string Name { get; set; }
+        public string Name { get; set; } = null !;
 
-        private static readonly List<string> colNames = new List<string>{"Id", "Name"};
+        private static readonly List<string> colNames = new List<string>
+        {
+            "Id",
+            "Name"
+        };
         public IEnumerable<string> GetColumnNames() => colNames;
         public static IEnumerable<string> ColNames => colNames;
+
         public static class Cols
         {
             public const string Id = "[Id]";
@@ -313,14 +332,14 @@ namespace ExampleUserDate.Data
 
         public string GetSelectCommand(int maxCount = 1000, params string[] excludedColumns)
         {
-            var cols = "[Id], [Name]".GetColumns(excludedColumns);
-            return $"select top({maxCount}) {cols.JoinCols()} from ExampleUserDate.T_DemoTableType where (@Id is null or [Id]=@Id)";
+            var cols = "[Id], [Name]".GetColumns(affolterNET.Data.Extensions.QuoteStyle.Brackets, excludedColumns);
+            return $"select top({maxCount}) {cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.Brackets)} from [ExampleUserDate].[T_DemoTableType] where (@Id is null or [Id]=@Id)";
         }
 
         public string GetInsertCommand(bool returnScopeIdentity = false, params string[] excludedColumns)
         {
-            var cols = "[Id], [Name]".GetColumns(excludedColumns);
-            var sql = $"insert into ExampleUserDate.T_DemoTableType ({cols.JoinCols()}) values ({cols.JoinCols(true)})";
+            var cols = "[Id], [Name]".GetColumns(affolterNET.Data.Extensions.QuoteStyle.Brackets, excludedColumns);
+            var sql = $"insert into [ExampleUserDate].[T_DemoTableType] ({cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.Brackets)}) values ({cols.JoinCols(true, affolterNET.Data.Extensions.QuoteStyle.Brackets)})";
             if (returnScopeIdentity)
             {
                 sql += "; select scope_identity() as id;";
@@ -331,25 +350,25 @@ namespace ExampleUserDate.Data
 
         public string GetUpdateCommand(params string[] excludedColumns)
         {
-            var cols = "[Id], [Name]".GetColumns(excludedColumns);
-            return $"update ExampleUserDate.T_DemoTableType set {cols.JoinForUpdate()} where [Id]=@Id";
+            var cols = "[Id], [Name]".GetColumns(affolterNET.Data.Extensions.QuoteStyle.Brackets, excludedColumns);
+            return $"update [ExampleUserDate].[T_DemoTableType] set {cols.JoinForUpdate(affolterNET.Data.Extensions.QuoteStyle.Brackets)} where [Id]=@Id";
         }
 
         public string GetDeleteCommand()
         {
-            return "delete from ExampleUserDate.T_DemoTableType where Id=@Id";
+            return "delete from [ExampleUserDate].[T_DemoTableType] where [Id]=@Id";
         }
 
         public string GetDeleteAllCommand()
         {
-            return "delete from ExampleUserDate.T_DemoTableType";
+            return "delete from [ExampleUserDate].[T_DemoTableType]";
         }
 
         public string GetSaveByIdCommand(bool select = false, params string[] excludedColumns)
         {
             return @$"
                         declare @rowcnt int
-                        if exists (select Id from ExampleUserDate.T_DemoTableType where Id = @Id)
+                        if exists (select Id from [ExampleUserDate].[T_DemoTableType] where Id = @Id)
                             begin
                                 {GetUpdateCommand(excludedColumns)}; set @rowcnt = (select @@rowcount);
                                 select 'ExampleUserDate' as [Schema], 'T_DemoTableType' as [Table], convert(nvarchar(50), @Id) as [Id], case when @rowcnt = 0 then '{Constants.NoAction}' else '{Constants.Updated}' end as [Action];
@@ -370,7 +389,11 @@ namespace ExampleUserDate.Data
         public void Reload(IDbConnection conn, IDbTransaction trsact)
         {
             var loaded = this.GetFromDb(conn, trsact);
-            if (loaded == null) { throw new InvalidOperationException("entity not found"); }
+            if (loaded == null)
+            {
+                throw new InvalidOperationException("entity not found");
+            }
+
             this.Name = loaded.Name;
         }
 
@@ -463,8 +486,26 @@ namespace ExampleUserDate.Data
         public static Guid Eins => _dict.First(kvp => kvp.Value == "Eins").Key;
         public static Guid Zwei => _dict.First(kvp => kvp.Value == "Zwei").Key;
         public static Guid Drei => _dict.First(kvp => kvp.Value == "Drei").Key;
+
         private static Dictionary<Guid, string> _dict = new()
-        {{Guid.Parse("230a5728-acb6-4e91-aea3-05ef34c0755d"), "Vier"}, {Guid.Parse("c1060bb2-07b0-4e5d-ad0b-35f3993d823d"), "Eins"}, {Guid.Parse("d749abff-6a43-4348-839f-61323fdc52d1"), "Zwei"}, {Guid.Parse("36a072b9-7216-4b99-bf8d-79730a4a1f37"), "Drei"}};
+        {
+            {
+                Guid.Parse("230a5728-acb6-4e91-aea3-05ef34c0755d"),
+                "Vier"
+            },
+            {
+                Guid.Parse("c1060bb2-07b0-4e5d-ad0b-35f3993d823d"),
+                "Eins"
+            },
+            {
+                Guid.Parse("d749abff-6a43-4348-839f-61323fdc52d1"),
+                "Zwei"
+            },
+            {
+                Guid.Parse("36a072b9-7216-4b99-bf8d-79730a4a1f37"),
+                "Drei"
+            }
+        };
         public static string? GetExampleUserDateDemoTableTypesString(this Guid g)
         {
             var entry = _dict.FirstOrDefault(kvp => kvp.Key.Equals(g));
@@ -482,12 +523,12 @@ namespace ExampleUserDate.Data
         [Da.DataType("nvarchar")]
         [Da.MaxLength(1000)]
         [Da.Required]
-        public string Message { get; set; }
+        public string Message { get; set; } = null !;
 
         [Da.DataType("nvarchar")]
         [Da.MaxLength(50)]
         [Da.Required]
-        public string Status { get; set; }
+        public string Status { get; set; } = null !;
 
         [Da.DataType("uniqueidentifier")]
         public Guid? Type { get; set; }
@@ -499,18 +540,29 @@ namespace ExampleUserDate.Data
         [Da.DataType("nvarchar")]
         [Da.MaxLength(1000)]
         [Da.Required]
-        public string InsertUser { get; set; }
+        public string InsertUser { get; set; } = null !;
 
         [Da.DataType("datetime")]
         public DateTime? UpdateDate { get; set; }
 
         [Da.DataType("nvarchar")]
         [Da.MaxLength(1000)]
-        public string UpdateUser { get; set; }
+        public string? UpdateUser { get; set; }
 
-        private static readonly List<string> colNames = new List<string>{"Id", "Message", "Status", "Type", "InsertDate", "InsertUser", "UpdateDate", "UpdateUser"};
+        private static readonly List<string> colNames = new List<string>
+        {
+            "Id",
+            "Message",
+            "Status",
+            "Type",
+            "InsertDate",
+            "InsertUser",
+            "UpdateDate",
+            "UpdateUser"
+        };
         public IEnumerable<string> GetColumnNames() => colNames;
         public static IEnumerable<string> ColNames => colNames;
+
         public static class Cols
         {
             public const string Id = "[Id]";
@@ -530,8 +582,8 @@ namespace ExampleUserDate.Data
 
         public string GetSelectCommand(int maxCount = 1000, params string[] excludedColumns)
         {
-            var cols = "[Id], [Message], [Type], [Status], [InsertDate], [InsertUser], [UpdateDate], [UpdateUser]".GetColumns(excludedColumns);
-            return $"select top({maxCount}) {cols.JoinCols()} from ExampleUserDate.V_Demo";
+            var cols = "[Id], [Message], [Type], [Status], [InsertDate], [InsertUser], [UpdateDate], [UpdateUser]".GetColumns(affolterNET.Data.Extensions.QuoteStyle.Brackets, excludedColumns);
+            return $"select top({maxCount}) {cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.Brackets)} from [ExampleUserDate].[V_Demo]";
         }
 
         public override string ToString()

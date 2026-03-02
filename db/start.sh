@@ -38,7 +38,7 @@ generate() {
     cd "pub"
 
     echo "dotnet $update_tool_dll \"dbup\" \"$localconnstring\" -h All"
-    dotnet $update_tool_dll "dbup" "$localconnstring" "-h All"
+    dotnet $update_tool_dll "dbup" "$localconnstring" -h All
 
     echo "dotnet $update_tool_dll \"gen\" \"$localconnstring\""
     dotnet $update_tool_dll "gen" "$localconnstring"

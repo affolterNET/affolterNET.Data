@@ -8,7 +8,6 @@ using affolterNET.Data.Interfaces;
 using Dapper;
 using Da = System.ComponentModel.DataAnnotations;
 
-#pragma warning disable CS8618
 // ReSharper disable InconsistentNaming
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable ClassNeverInstantiated.Global
@@ -72,12 +71,12 @@ namespace ExamplePgVersion.Data
 
         [Da.DataType("text")]
         [Da.Required]
-        public string Message { get; set; }
+        public string Message { get; set; } = null !;
 
         [Da.DataType("varchar")]
         [Da.MaxLength(50)]
         [Da.Required]
-        public string Status { get; set; }
+        public string Status { get; set; } = null !;
 
         [Da.DataType("uuid")]
         public Guid? TypeId { get; set; }
@@ -281,7 +280,7 @@ namespace ExamplePgVersion.Data
 
         [Da.DataType("text")]
         [Da.Required]
-        public string Name { get; set; }
+        public string Name { get; set; } = null !;
 
         private static readonly List<string> colNames = new List<string>
         {
@@ -500,11 +499,11 @@ namespace ExamplePgVersion.Data
         public Guid? Id { get; set; }
 
         [Da.DataType("text")]
-        public string Message { get; set; }
+        public string? Message { get; set; }
 
         [Da.DataType("varchar")]
         [Da.MaxLength(50)]
-        public string Status { get; set; }
+        public string? Status { get; set; }
 
         [Da.DataType("uuid")]
         public Guid? TypeId { get; set; }
