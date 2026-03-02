@@ -42,7 +42,7 @@ public class ListContentsGenerator
         var dialect = _genCfg.SqlDialect;
         using var conn = dialect.CreateConnection(_genCfg.ConnString!);
         var tableName = dialect.QuoteTableName(_tbl.Schema, _tbl.Name);
-        var cmd = $"select {dialect.QuoteIdentifier(_ctsCfg.IdAttribute)} as Id, {dialect.QuoteIdentifier(_ctsCfg.NameAttribute)} as Value from {tableName}";
+        var cmd = $"select {dialect.QuoteIdentifier(_ctsCfg.IdAttribute)} as {dialect.QuoteIdentifier("Id")}, {dialect.QuoteIdentifier(_ctsCfg.NameAttribute)} as {dialect.QuoteIdentifier("Value")} from {tableName}";
         var results = conn.Query(cmd).ToList();
 
         var dictName = "_dict";

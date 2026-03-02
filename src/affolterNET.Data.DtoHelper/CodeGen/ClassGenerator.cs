@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using affolterNET.Data.DtoHelper.Database;
 using affolterNET.Data.DtoHelper.Dialect;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -108,7 +109,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
                 // SetIsActive
                 var isActive = _tbl.GetIsActiveName();
-                isActive = isActive == Constants.NotAvailable ? string.Empty : $"this.{isActive} = isActive;";
+                isActive = isActive == Constants.NotAvailable ? string.Empty : $"this.{ColPropertyName(isActive)} = isActive;";
                 var sgSetIsActive = new StringGenerator($"public void SetIsActive(bool isActive) {{ {isActive} }}");
                 sgSetIsActive.Generate(Add);
 
@@ -119,7 +120,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
                 // SetUpdatedUser
                 var updatedUser = _tbl.GetUpdatedUserName();
-                updatedUser = updatedUser == Constants.NotAvailable ? string.Empty : $"this.{updatedUser} = userName;";
+                updatedUser = updatedUser == Constants.NotAvailable ? string.Empty : $"this.{ColPropertyName(updatedUser)} = userName;";
                 var sgSetUpdatedUser =
                     new StringGenerator($"public void SetUpdatedUser(string userName) {{ {updatedUser} }}");
                 sgSetUpdatedUser.Generate(Add);
@@ -131,7 +132,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
                 // SetInsertedUser
                 var insertedUser = _tbl.GetInsertedUserName();
-                insertedUser = insertedUser == Constants.NotAvailable ? string.Empty : $"this.{insertedUser} = userName;";
+                insertedUser = insertedUser == Constants.NotAvailable ? string.Empty : $"this.{ColPropertyName(insertedUser)} = userName;";
                 var sgSetInsertedUser =
                     new StringGenerator($"public void SetInsertedUser(string userName) {{ {insertedUser} }}");
                 sgSetInsertedUser.Generate(Add);
@@ -143,7 +144,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
                 // SetUpdatedDate
                 var updatedDate = _tbl.GetUpdatedDateName();
-                updatedDate = updatedDate == Constants.NotAvailable ? string.Empty : $"this.{updatedDate} = date;";
+                updatedDate = updatedDate == Constants.NotAvailable ? string.Empty : $"this.{ColPropertyName(updatedDate)} = date;";
                 var sgSetUpdatedDate =
                     new StringGenerator($"public void SetUpdatedDate(DateTime date) {{ {updatedDate} }}");
                 sgSetUpdatedDate.Generate(Add);
@@ -155,7 +156,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
                 // SetInsertedDate
                 var insertedDate = _tbl.GetInsertedDateName();
-                insertedDate = insertedDate == Constants.NotAvailable ? string.Empty : $"this.{insertedDate} = date;";
+                insertedDate = insertedDate == Constants.NotAvailable ? string.Empty : $"this.{ColPropertyName(insertedDate)} = date;";
                 var sgSetInsertedDate =
                     new StringGenerator($"public void SetInsertedDate(DateTime date) {{ {insertedDate} }}");
                 sgSetInsertedDate.Generate(Add);
@@ -168,6 +169,12 @@ namespace affolterNET.Data.DtoHelper.CodeGen
             classDeclaration = classDeclaration.AddMembers(_list.ToArray());
 
             return classDeclaration;
+        }
+
+        private string ColPropertyName(string columnName)
+        {
+            var col = _tbl.AllColumns.FirstOrDefault(c => c.Name == columnName);
+            return col?.PropertyName ?? columnName;
         }
 
         private void Add(MemberDeclarationSyntax mds)

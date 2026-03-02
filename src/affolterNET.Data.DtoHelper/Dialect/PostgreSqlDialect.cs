@@ -47,7 +47,7 @@ public class PostgreSqlDialect : ISqlDialect
 
     public string FormatInsertReturning(string pkColumn)
     {
-        return $" returning \"\"{pkColumn}\"\" as id";
+        return $" returning \"{pkColumn}\" as id";
     }
 
     public string FormatSaveById(
@@ -88,13 +88,13 @@ public class PostgreSqlDialect : ISqlDialect
                             WHERE NOT EXISTS (SELECT 1 FROM upsert)
                             RETURNING *
                         )
-                        SELECT '{schema}' AS ""Schema"", '{table}' AS ""Table"",
-                            {pkParamName}::text AS ""Id"",
+                        SELECT '{schema}' AS """"Schema"""", '{table}' AS """"Table"""",
+                            {pkParamName}::text AS """"Id"""",
                             CASE
                                 WHEN EXISTS (SELECT 1 FROM upsert) THEN '{{Constants.Updated}}'
                                 WHEN EXISTS (SELECT 1 FROM inserted) THEN '{{Constants.Inserted}}'
                                 ELSE '{{Constants.NoAction}}'
-                            END AS ""Action"";
+                            END AS """"Action"""";
                         {{{selectCall}}}"";";
     }
 
@@ -142,6 +142,8 @@ public class PostgreSqlDialect : ISqlDialect
             _ => "string"
         };
     }
+
+    public string EscapeForCSharp(string sql) => sql.Replace("\"", "\\\"");
 
     public IDbConnection CreateConnection(string connString) => new NpgsqlConnection(connString);
 

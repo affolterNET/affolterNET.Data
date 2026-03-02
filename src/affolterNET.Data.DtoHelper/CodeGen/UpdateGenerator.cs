@@ -42,11 +42,14 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                 .Select(c => c.Name).ToList();
             var tableName = dialect.QuoteTableName(tbl.Schema, tbl.Name);
             var quoteStyle = dialect.QuoteStyle;
-            var colsJoin = columns.JoinCols(false, quoteStyle);
+            var colsJoin = dialect.EscapeForCSharp(columns.JoinCols(false, quoteStyle));
+            var escapedTableName = dialect.EscapeForCSharp(tableName);
+            var escapedUpdateWhere = dialect.EscapeForCSharp(updateWhere);
+            var escapedVersionWhere = dialect.EscapeForCSharp(versionWhere);
 
             var content = $@"
                 var cols = ""{colsJoin}"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.{quoteStyle}, excludedColumns);
-                return $""update {tableName} set {{cols.JoinForUpdate(affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}} {updateWhere}{versionWhere}"";
+                return $""update {escapedTableName} set {{cols.JoinForUpdate(affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}} {escapedUpdateWhere}{escapedVersionWhere}"";
             ";
             var inner = tbl.IsView
                 ? "throw new InvalidOperationException(\"no updates on views\");"

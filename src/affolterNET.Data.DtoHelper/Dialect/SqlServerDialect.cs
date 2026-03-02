@@ -123,6 +123,8 @@ public class SqlServerDialect : ISqlDialect
         };
     }
 
+    public string EscapeForCSharp(string sql) => sql;
+
     public IDbConnection CreateConnection(string connString) => new SqlConnection(connString);
 
     public ISchemaReader CreateSchemaReader(TextWriter tw) => new SqlServerSchemaReader(tw);

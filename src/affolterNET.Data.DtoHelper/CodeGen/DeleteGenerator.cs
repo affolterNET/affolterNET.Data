@@ -21,7 +21,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
         {
             var pkCol = tbl.AllColumns.FirstOrDefault(c => c.IsPK);
             var versionCol = tbl.AllColumns.FirstOrDefault(c => c.IsVersionCol());
-            var tableName = dialect.QuoteTableName(tbl.Schema, tbl.Name);
+            var tableName = dialect.EscapeForCSharp(dialect.QuoteTableName(tbl.Schema, tbl.Name));
             string sql;
             var sqlAll = $"return \"delete from {tableName}";
             if (pkCol == null)
@@ -30,11 +30,11 @@ namespace affolterNET.Data.DtoHelper.CodeGen
             }
             else
             {
-                var updateWhere = $" where {dialect.QuoteIdentifier(pkCol.Name)}=@{pkCol.PropertyName}";
+                var updateWhere = dialect.EscapeForCSharp($" where {dialect.QuoteIdentifier(pkCol.Name)}=@{pkCol.PropertyName}");
                 var versionWhere = string.Empty;
                 if (versionCol != null)
                 {
-                    versionWhere = $" and {dialect.QuoteIdentifier(versionCol.Name)}=@{versionCol.PropertyName}";
+                    versionWhere = dialect.EscapeForCSharp($" and {dialect.QuoteIdentifier(versionCol.Name)}=@{versionCol.PropertyName}");
                 }
 
                 sql = $"{sqlAll}{updateWhere}{versionWhere}\"";

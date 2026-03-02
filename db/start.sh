@@ -58,8 +58,8 @@ generate_pg() {
     dotnet publish -c Release -o ./pub
     cd "pub"
 
-    echo "dotnet $update_tool_dll \"dbup\" \"$pgconnstring\" -h All"
-    dotnet $update_tool_dll "dbup" "$pgconnstring" "-h All"
+    echo "dotnet $update_tool_dll \"dbup\" \"$pgconnstring\""
+    dotnet $update_tool_dll "dbup" "$pgconnstring"
 
     echo "dotnet $update_tool_dll \"gen\" \"$pgconnstring\""
     dotnet $update_tool_dll "gen" "$pgconnstring"

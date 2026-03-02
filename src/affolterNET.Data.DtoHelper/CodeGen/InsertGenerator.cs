@@ -27,15 +27,16 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                 .Select(c => c.Name).ToList();
             var tableName = dialect.QuoteTableName(tbl.Schema, tbl.Name);
             var quoteStyle = dialect.QuoteStyle;
-            var colsJoin = cols.JoinCols(false, quoteStyle);
+            var colsJoin = dialect.EscapeForCSharp(cols.JoinCols(false, quoteStyle));
             var pkCol = tbl.GetPrimaryKeyColumn();
-            var returning = dialect.FormatInsertReturning(pkCol.Name);
+            var returning = dialect.EscapeForCSharp(dialect.FormatInsertReturning(pkCol.Name));
+            var escapedTableName = dialect.EscapeForCSharp(tableName);
 
             var sg = new StringGenerator(
                 $@"
                 public string GetInsertCommand(bool returnScopeIdentity = false, params string[] excludedColumns) {{
                     var cols = ""{colsJoin}"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.{quoteStyle}, excludedColumns);
-                    var sql = $""insert into {tableName} ({{cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}}) values ({{cols.JoinCols(true, affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}})"";
+                    var sql = $""insert into {escapedTableName} ({{cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}}) values ({{cols.JoinCols(true, affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}})"";
                     if (returnScopeIdentity) {{
                         sql += ""{returning}"";
                     }}

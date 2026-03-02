@@ -82,7 +82,7 @@ namespace affolterNET.Data.DtoHelper.Database
 
         public override string ToString()
         {
-            return string.Join("; ", AllColumns.Select(c => string.Format("{0}: {{{0}}}", c.Name)));
+            return string.Join("; ", AllColumns.Select(c => string.Format("{0}: {{{1}}}", c.Name, c.PropertyName)));
         }
 
         // T-SQL helpers used by Example.Update — not used by code generation.

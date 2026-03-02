@@ -12,6 +12,7 @@ public interface ISqlDialect
     // Quoting
     string QuoteIdentifier(string name);
     string QuoteTableName(string schema, string table);
+    string EscapeForCSharp(string sql);
     string FormatTableNameConstant(string schema, string table);
     string FormatColumnNameConstant(string dbColumnName);
 

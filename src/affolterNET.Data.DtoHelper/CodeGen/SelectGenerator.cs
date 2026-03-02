@@ -30,12 +30,12 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
             var tableName = dialect.QuoteTableName(tbl.Schema, tbl.Name);
             var quoteStyle = dialect.QuoteStyle;
-            var colsJoin = columns.JoinCols(false, quoteStyle);
-            var selectTemplate = dialect.FormatSelectTop(
+            var colsJoin = dialect.EscapeForCSharp(columns.JoinCols(false, quoteStyle));
+            var selectTemplate = dialect.EscapeForCSharp(dialect.FormatSelectTop(
                 $"{{cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}}",
                 tableName,
                 selectWhere,
-                0);
+                0));
 
             var sgSelect = new StringGenerator(
                 $@"
