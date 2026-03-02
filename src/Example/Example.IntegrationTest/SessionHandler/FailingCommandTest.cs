@@ -24,7 +24,7 @@ public class FailingCommandTest
         // ;        services.AddScoped<ISqlSessionHandler, SqlSessionHandler>();
         // services.AddTransient<ISqlSession, SqlSession>();
         // services.AddSingleton<ISqlSessionFactory>((Func<IServiceProvider, ISqlSessionFactory>) (provider => (ISqlSessionFactory) new SqlSessionFactory(connString)));
-        var handler = new SqlSessionHandler(new SqlSessionFactory(connString));
+        var handler = new SqlSessionHandler(new SqlSessionFactory(new SqlServerConnectionFactory(connString)));
         var dto = new Example_T_DemoTable
         {
             Id = Guid.NewGuid(),

@@ -23,7 +23,7 @@ public class HistorySaverTest: IntegrationTest
     {
         _log = log;
         _connString = Fixture.GetConnString();
-        var sessionFactory = new SqlSessionFactory(_connString);
+        var sessionFactory = new SqlSessionFactory(new SqlServerConnectionFactory(_connString));
         var historySaver = new HistorySaver(_connString, EnumHistoryMode.CommandsOnlyAndCheck, HistoryTableName);
         _sessionHandler = new SqlSessionHandler(sessionFactory, historySaver);
     }
