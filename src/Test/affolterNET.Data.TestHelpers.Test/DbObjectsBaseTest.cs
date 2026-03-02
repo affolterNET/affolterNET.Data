@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Sdk;
 
 namespace affolterNET.Data.TestHelpers.Test
 {
@@ -20,7 +19,7 @@ namespace affolterNET.Data.TestHelpers.Test
         {
             var testee = new DbObjects(_output);
             testee.Create1("a");
-            Assert.Throws<XunitException>(() => testee.Create2("a"));
+            Assert.Throws<ArgumentException>(() => testee.Create2("a"));
         }
         
         [Fact]
@@ -28,9 +27,7 @@ namespace affolterNET.Data.TestHelpers.Test
         {
             var testee = new DbObjects(_output);
             testee.Create1("a", "erster");
-            testee.Create1("a", "zweiter");
-            var result = testee.Get<Obj1>("a");
-            Assert.Equal("erster", result.Name);
+            Assert.Throws<ArgumentException>(() => testee.Create1("a", "zweiter"));
         }
 
         [Fact]
@@ -115,28 +112,25 @@ namespace affolterNET.Data.TestHelpers.Test
         public Obj1 Create1WithParams(string name, int num, bool check, string? objname = null)
         {
             objname ??= name;
-            return GetSet(() =>
-            {
-                return new Obj1 {Name = check ? Test1 : Test2, Num = num, Bol = check};
-            }, name);
+            return Set(() => new Obj1 {Name = check ? Test1 : Test2, Num = num, Bol = check}, _ => name);
         }
 
         public void Create1(string name, string? objname = null)
         {
             objname ??= name;
-            GetSet(() => new Obj1 { Name = objname }, name);
+            Set(() => new Obj1 { Name = objname }, _ => name);
         }
-        
+
         public void Create2(string name, string? objname = null)
         {
             objname ??= name;
-            GetSet(() => new Obj2 { Name = objname }, name);
+            Set(() => new Obj2 { Name = objname }, _ => name);
         }
-        
+
         public void Create3(string name, string? objname = null)
         {
             objname ??= name;
-            GetSet(() => new Obj3 { Name = objname }, name);
+            Set(() => new Obj3 { Name = objname }, _ => name);
         }
     }
 }
