@@ -1,5 +1,6 @@
 name: Build and Publish NuGet Packages
 
+# Builds, tests, and publishes NuGet packages
 on:
   push:
     branches: [ develop, main ]
