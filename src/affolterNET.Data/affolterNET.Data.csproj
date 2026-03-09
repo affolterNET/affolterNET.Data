@@ -11,7 +11,7 @@
     <RepositoryUrl>https://github.com/affolterNET/affolterNET.Data</RepositoryUrl>
     <ProjectGuid>7F8BACB2-B376-4713-B2FC-8C3C0F089D9C</ProjectGuid>
     <UserSecretsId>eeff2dd1-fe6c-40f0-a5c6-e551d9b1b813</UserSecretsId>
-    <Version>3.0.3</Version>
+    <Version>3.0.4</Version>
     <IsPackable>true</IsPackable>
     <Authors>Martin Affolter</Authors>
     <Company>affolter.NET GmbH</Company>
