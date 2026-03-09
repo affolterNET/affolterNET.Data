@@ -40,12 +40,22 @@ namespace affolterNET.Data.Queries
             var whereIdx = sql.IndexOf(" where ", StringComparison.InvariantCultureIgnoreCase);
             if (whereIdx > -1)
             {
-                Sql = $"{sql.Substring(0, whereIdx)} {filter}";    
+                Sql = $"{sql.Substring(0, whereIdx)} {filter}";
             }
             else
             {
-                Sql = $"{sql} {filter}";
+                // Handle PostgreSQL LIMIT clause: insert WHERE before LIMIT
+                var limitIdx = sql.IndexOf(" limit ", StringComparison.InvariantCultureIgnoreCase);
+                if (limitIdx > -1)
+                {
+                    Sql = $"{sql.Substring(0, limitIdx)} {filter}{sql.Substring(limitIdx)}";
+                }
+                else
+                {
+                    Sql = $"{sql} {filter}";
+                }
             }
+
             
             foreach (var p in filter.GetAllParameters())
             {

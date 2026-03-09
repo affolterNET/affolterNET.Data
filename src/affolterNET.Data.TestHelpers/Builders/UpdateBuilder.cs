@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text.RegularExpressions;
 using affolterNET.Data.Extensions;
 using affolterNET.Data.Interfaces;
 using Dapper;
@@ -13,8 +14,8 @@ namespace affolterNET.Data.TestHelpers.Builders
 
         private string sql = string.Empty;
 
-        public UpdateBuilder(IDbConnection conn, IDbTransaction trsact, IDtoBase dto)
-            : base(conn, trsact, dto)
+        public UpdateBuilder(IDbConnection connection, IDbTransaction transaction, IDtoBase dto)
+            : base(connection, transaction, dto)
         {
             if (dto.GetUpdatedUserName() != Constants.NotAvailable)
             {
@@ -48,19 +49,27 @@ namespace affolterNET.Data.TestHelpers.Builders
                 sql += $" set {string.Join(", ", _updateStatements)}";
             }
 
-            if (WhereStatements.Count > 0)
-            {
-                sql += $" where {string.Join(" and ", WhereStatements)}";
-            }
+            sql += BuildWhereClause();
 
-            return Conn.Execute(sql, Paras, Trsact);
+            return Connection.Execute(sql, Paras, Transaction);
         }
 
         private void AddUpdate(string col, object value)
         {
-            var withoutBrackets = $"upd_{col.StripSquareBrackets()}";
-            _updateStatements.Add($"{col}=@{withoutBrackets}");
-            Paras.Add(withoutBrackets, value);
+            var stripped = col.StripQuoting();
+            var columnRef = IsPostgres
+                ? PascalCaseToQuotedSnakeCase(stripped)
+                : stripped;
+            var paramName = $"upd_{stripped}";
+            _updateStatements.Add($"{columnRef}=@{paramName}");
+            Paras.Add(paramName, value);
+        }
+
+        private static string PascalCaseToQuotedSnakeCase(string name)
+        {
+            if (name.Contains("_")) return $"\"{name}\"";
+            var snake = Regex.Replace(name, "([A-Z])", "_$1").TrimStart('_').ToLower();
+            return $"\"{snake}\"";
         }
     }
 }

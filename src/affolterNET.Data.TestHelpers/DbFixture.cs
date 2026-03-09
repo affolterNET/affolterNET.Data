@@ -18,7 +18,7 @@ namespace affolterNET.Data.TestHelpers
         private string? _connString;
         private ISqlSessionHandler? _handler;
         private ITransactionDecorator? _transaction;
-        
+
         public IConnectionDecorator? Connection { get; private set; }
 
         public IDbTransaction? Transaction => _transaction?.WrappedTransaction;
@@ -37,9 +37,10 @@ namespace affolterNET.Data.TestHelpers
         }
 
         protected DbFixture(string connStringKey = "CONNSTRING", string? userSecretsId = null)
-        { 
+        {
             _connStringKey = connStringKey;
             _userSecretsId = userSecretsId;
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
             SqlMapper.AddTypeMap(typeof(DateOnly), DbType.Date, true);
             SqlMapper.AddTypeMap(typeof(DateOnly?), DbType.Date, true);
         }
@@ -57,12 +58,17 @@ namespace affolterNET.Data.TestHelpers
             _transaction = null!;
         }
 
+        protected virtual IDbConnection CreateConnection(string connString)
+        {
+            return new SqlConnection(connString);
+        }
+
         public void StartTest()
         {
             if (Connection == null)
             {
                 _connString = GetConnString();
-                var cn = new SqlConnection(_connString);
+                var cn = CreateConnection(_connString);
                 Connection = new ConnectionDecorator(cn);
                 Connection.Open();
             }

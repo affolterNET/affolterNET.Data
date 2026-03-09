@@ -8,28 +8,28 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 {
     public class SaveByIdGenerator
     {
-        private readonly Table tbl;
-        private readonly ISqlDialect dialect;
+        private readonly Table _tbl;
+        private readonly ISqlDialect _dialect;
 
         public SaveByIdGenerator(Table tbl, ISqlDialect dialect)
         {
-            this.tbl = tbl;
-            this.dialect = dialect;
+            _tbl = tbl;
+            _dialect = dialect;
         }
 
         public void Generate(Action<MemberDeclarationSyntax> add)
         {
-            var pk = tbl.AllColumns.FirstOrDefault(t => t.IsPK);
+            var pk = _tbl.AllColumns.FirstOrDefault(t => t.IsPK);
             if (pk == null)
             {
                 return;
             }
 
-            var tableName = dialect.QuoteTableName(tbl.Schema, tbl.Name);
-            var hasAutoIncrementPk = tbl.GetPrimaryKeyColumn()?.IsAutoIncrement == true;
+            var tableName = _dialect.QuoteTableName(_tbl.Schema, _tbl.Name);
+            var hasAutoIncrementPk = _tbl.GetPrimaryKeyColumn()?.IsAutoIncrement == true;
             var insertReturnId = hasAutoIncrementPk ? "true" : "false";
 
-            var body = dialect.FormatSaveById(
+            var body = _dialect.FormatSaveById(new SaveByIdParams(
                 tableName,
                 pk.Name,
                 $"GetUpdateCommand(excludedColumns)",
@@ -37,7 +37,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
                 "(select ? GetSelectCommand(1, excludedColumns) : string.Empty)",
                 pk.PropertyName!,
                 hasAutoIncrementPk,
-                true);
+                true));
 
             var sg = new StringGenerator(
                 $@"

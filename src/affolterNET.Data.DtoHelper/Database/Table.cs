@@ -14,17 +14,17 @@ namespace affolterNET.Data.DtoHelper.Database
     {
         internal readonly List<Column> AllColumns;
 
-        private readonly GeneratorCfg cfg;
+        private readonly GeneratorCfg _cfg;
 
         public Table(GeneratorCfg cfg)
         {
             InnerKeys = new List<Key>();
             OuterKeys = new List<Key>();
             AllColumns = new List<Column>();
-            this.cfg = cfg;
+            _cfg = cfg;
         }
 
-        public bool InsertedUpdatedDateUtc => cfg.InsertedUpdatedDateUtc;
+        public bool InsertedUpdatedDateUtc => _cfg.InsertedUpdatedDateUtc;
 
         public string? ClassName { get; set; }
 
@@ -176,10 +176,10 @@ while exists (select * from sys.triggers where parent_id = OBJECT_ID(N'{tableNam
 
         public string GetVersionName()
         {
-            var versionCol = Columns.FirstOrDefault(c => cfg.VersionFunc(c.Name));
-            if (versionCol != null && !string.IsNullOrWhiteSpace(versionCol.Name))
+            var versionCol = Columns.FirstOrDefault(c => _cfg.VersionFunc(c.Name));
+            if (versionCol != null && !string.IsNullOrWhiteSpace(versionCol.PropertyName))
             {
-                return versionCol.Name;
+                return versionCol.PropertyName!;
             }
 
             return Constants.NotAvailable;
@@ -187,10 +187,10 @@ while exists (select * from sys.triggers where parent_id = OBJECT_ID(N'{tableNam
 
         public string GetIsActiveName()
         {
-            var isActiveCol = Columns.FirstOrDefault(c => cfg.IsActiveFunc(c.Name));
-            if (isActiveCol != null && !string.IsNullOrWhiteSpace(isActiveCol.Name))
+            var isActiveCol = Columns.FirstOrDefault(c => _cfg.IsActiveFunc(c.Name));
+            if (isActiveCol != null && !string.IsNullOrWhiteSpace(isActiveCol.PropertyName))
             {
-                return isActiveCol.Name;
+                return isActiveCol.PropertyName!;
             }
 
             return Constants.NotAvailable;
@@ -198,10 +198,10 @@ while exists (select * from sys.triggers where parent_id = OBJECT_ID(N'{tableNam
 
         public string GetUpdatedUserName()
         {
-            var updateUserCol = Columns.FirstOrDefault(c => cfg.UpdateUserFunc(c.Name));
-            if (updateUserCol != null && !string.IsNullOrWhiteSpace(updateUserCol.Name))
+            var updateUserCol = Columns.FirstOrDefault(c => _cfg.UpdateUserFunc(c.Name));
+            if (updateUserCol != null && !string.IsNullOrWhiteSpace(updateUserCol.PropertyName))
             {
-                return updateUserCol.Name;
+                return updateUserCol.PropertyName!;
             }
 
             return Constants.NotAvailable;
@@ -209,10 +209,10 @@ while exists (select * from sys.triggers where parent_id = OBJECT_ID(N'{tableNam
 
         public string GetInsertedUserName()
         {
-            var insertUserCol = Columns.FirstOrDefault(c => cfg.InsertUserFunc(c.Name));
-            if (insertUserCol != null && !string.IsNullOrWhiteSpace(insertUserCol.Name))
+            var insertUserCol = Columns.FirstOrDefault(c => _cfg.InsertUserFunc(c.Name));
+            if (insertUserCol != null && !string.IsNullOrWhiteSpace(insertUserCol.PropertyName))
             {
-                return insertUserCol.Name;
+                return insertUserCol.PropertyName!;
             }
 
             return Constants.NotAvailable;
@@ -220,10 +220,10 @@ while exists (select * from sys.triggers where parent_id = OBJECT_ID(N'{tableNam
 
         public string GetUpdatedDateName()
         {
-            var updateDateCol = Columns.FirstOrDefault(c => cfg.UpdateDateFunc(c.Name));
-            if (updateDateCol != null && !string.IsNullOrWhiteSpace(updateDateCol.Name))
+            var updateDateCol = Columns.FirstOrDefault(c => _cfg.UpdateDateFunc(c.Name));
+            if (updateDateCol != null && !string.IsNullOrWhiteSpace(updateDateCol.PropertyName))
             {
-                return updateDateCol.Name;
+                return updateDateCol.PropertyName!;
             }
 
             return Constants.NotAvailable;
@@ -231,10 +231,10 @@ while exists (select * from sys.triggers where parent_id = OBJECT_ID(N'{tableNam
 
         public string GetInsertedDateName()
         {
-            var insertDateCol = Columns.FirstOrDefault(c => cfg.InsertDateFunc(c.Name));
-            if (insertDateCol != null && !string.IsNullOrWhiteSpace(insertDateCol.Name))
+            var insertDateCol = Columns.FirstOrDefault(c => _cfg.InsertDateFunc(c.Name));
+            if (insertDateCol != null && !string.IsNullOrWhiteSpace(insertDateCol.PropertyName))
             {
-                return insertDateCol.Name;
+                return insertDateCol.PropertyName!;
             }
 
             return Constants.NotAvailable;

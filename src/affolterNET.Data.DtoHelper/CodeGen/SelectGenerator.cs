@@ -9,30 +9,30 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 {
     public class SelectGenerator
     {
-        private readonly Table tbl;
-        private readonly ISqlDialect dialect;
+        private readonly Table _tbl;
+        private readonly ISqlDialect _dialect;
 
         public SelectGenerator(Table tbl, ISqlDialect dialect)
         {
-            this.tbl = tbl;
-            this.dialect = dialect;
+            _tbl = tbl;
+            _dialect = dialect;
         }
 
         public void Generate(Action<MemberDeclarationSyntax> add)
         {
-            var columns = tbl.AllColumns.Select(c => c.Name);
-            var keys = tbl.GetPrimaryKeyColumns().ToList();
+            var columns = _tbl.AllColumns.Select(c => c.Name != c.PropertyName ? $"{c.Name}|{c.PropertyName}" : c.Name);
+            var keys = _tbl.GetPrimaryKeyColumns().ToList();
             var selectWhere = string.Empty;
             if (keys.Count > 0)
             {
                 selectWhere = " where " + string.Join(" and ", keys.Select(WhereStatement));
             }
 
-            var tableName = dialect.QuoteTableName(tbl.Schema, tbl.Name);
-            var quoteStyle = dialect.QuoteStyle;
-            var colsJoin = dialect.EscapeForCSharp(columns.JoinCols(false, quoteStyle));
-            var selectTemplate = dialect.EscapeForCSharp(dialect.FormatSelectTop(
-                $"{{cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}}",
+            var tableName = _dialect.QuoteTableName(_tbl.Schema, _tbl.Name);
+            var quoteStyle = _dialect.QuoteStyle;
+            var colsJoin = _dialect.EscapeForCSharp(columns.JoinColsForCodeGen(quoteStyle));
+            var selectTemplate = _dialect.EscapeForCSharp(_dialect.FormatSelectTop(
+                $"{{cols.JoinColsForSelect(affolterNET.Data.Extensions.QuoteStyle.{quoteStyle})}}",
                 tableName,
                 selectWhere,
                 0));
@@ -49,7 +49,7 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
         private string WhereStatement(Column col)
         {
-            return $"(@{col.PropertyName} is null or {dialect.QuoteIdentifier(col.Name)}=@{col.PropertyName})";
+            return _dialect.FormatNullableWhereClause(col.PropertyName!, _dialect.QuoteIdentifier(col.Name), col.DataType);
         }
     }
 }

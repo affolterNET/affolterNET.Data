@@ -7,59 +7,59 @@ namespace affolterNET.Data.TestHelpers
 {
     public sealed class TestSqlConnection : DbConnection
     {
-        private readonly SqlConnection _conn;
+        private readonly SqlConnection _connection;
 
-        private DbTransaction _trsact;
+        private DbTransaction _transaction;
 
-        public TestSqlConnection(SqlConnection conn)
+        public TestSqlConnection(SqlConnection connection)
         {
-            _conn = conn;
-            ConnectionString = _conn.ConnectionString;
+            _connection = connection;
+            ConnectionString = _connection.ConnectionString;
         }
 
         public override string ConnectionString
         {
-            get => _conn.ConnectionString;
-            set => _conn.ConnectionString = value;
+            get => _connection.ConnectionString;
+            set => _connection.ConnectionString = value;
         }
 
-        public override string Database => _conn.Database;
+        public override string Database => _connection.Database;
 
-        public override ConnectionState State => _conn.State;
+        public override ConnectionState State => _connection.State;
 
-        public override string DataSource => _conn.DataSource;
+        public override string DataSource => _connection.DataSource;
 
-        public override string ServerVersion => _conn.ServerVersion;
+        public override string ServerVersion => _connection.ServerVersion;
 
         protected override DbTransaction BeginDbTransaction(IsolationLevel il)
         {
-            if (_trsact == null)
+            if (_transaction == null)
             {
-                var trans = _conn.BeginTransaction(il);
-                _trsact = new TestSqlTransaction(trans);
+                var trans = _connection.BeginTransaction(il);
+                _transaction = new TestSqlTransaction(trans);
             }
 
-            return _trsact;
+            return _transaction;
         }
 
         public override void ChangeDatabase(string databaseName)
         {
-            _conn.ChangeDatabase(databaseName);
+            _connection.ChangeDatabase(databaseName);
         }
 
         public override void Close()
         {
-            _conn.Close();
+            _connection.Close();
         }
 
         public override void Open()
         {
-            _conn.Open();
+            _connection.Open();
         }
 
         protected override DbCommand CreateDbCommand()
         {
-            return _conn.CreateCommand();
+            return _connection.CreateCommand();
         }
     }
 }

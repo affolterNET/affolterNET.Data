@@ -16,6 +16,7 @@
     <Company>affolter.NET GmbH</Company>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>true</WarningsAsErrors>
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>

@@ -129,7 +129,7 @@ namespace ExampleVersion.Data
         public string GetSelectCommand(int maxCount = 1000, params string[] excludedColumns)
         {
             var cols = "[Id], [Message], [Type], [Status], [VersionTimestamp]".GetColumns(affolterNET.Data.Extensions.QuoteStyle.Brackets, excludedColumns);
-            return $"select top({maxCount}) {cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.Brackets)} from [ExampleVersion].[T_DemoTable] where (@Id is null or [Id]=@Id)";
+            return $"select top({maxCount}) {cols.JoinColsForSelect(affolterNET.Data.Extensions.QuoteStyle.Brackets)} from [ExampleVersion].[T_DemoTable] where (@Id is null or [Id]=@Id)";
         }
 
         public string GetInsertCommand(bool returnScopeIdentity = false, params string[] excludedColumns)
@@ -177,14 +177,14 @@ namespace ExampleVersion.Data
                         {(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}";
         }
 
-        public ExampleVersion_T_DemoTable? GetFromDb(IDbConnection conn, IDbTransaction trsact)
+        public ExampleVersion_T_DemoTable? GetFromDb(IDbConnection connection, IDbTransaction transaction)
         {
-            return conn.QueryFirstOrDefault<ExampleVersion_T_DemoTable>(this.GetSelectCommand(1), this, trsact);
+            return connection.QueryFirstOrDefault<ExampleVersion_T_DemoTable>(this.GetSelectCommand(1), this, transaction);
         }
 
-        public void Reload(IDbConnection conn, IDbTransaction trsact)
+        public void Reload(IDbConnection connection, IDbTransaction transaction)
         {
-            var loaded = this.GetFromDb(conn, trsact);
+            var loaded = this.GetFromDb(connection, transaction);
             if (loaded == null)
             {
                 throw new InvalidOperationException("entity not found");
@@ -318,7 +318,7 @@ namespace ExampleVersion.Data
         public string GetSelectCommand(int maxCount = 1000, params string[] excludedColumns)
         {
             var cols = "[Id], [Name]".GetColumns(affolterNET.Data.Extensions.QuoteStyle.Brackets, excludedColumns);
-            return $"select top({maxCount}) {cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.Brackets)} from [ExampleVersion].[T_DemoTableType] where (@Id is null or [Id]=@Id)";
+            return $"select top({maxCount}) {cols.JoinColsForSelect(affolterNET.Data.Extensions.QuoteStyle.Brackets)} from [ExampleVersion].[T_DemoTableType] where (@Id is null or [Id]=@Id)";
         }
 
         public string GetInsertCommand(bool returnScopeIdentity = false, params string[] excludedColumns)
@@ -366,14 +366,14 @@ namespace ExampleVersion.Data
                         {(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}";
         }
 
-        public ExampleVersion_T_DemoTableType? GetFromDb(IDbConnection conn, IDbTransaction trsact)
+        public ExampleVersion_T_DemoTableType? GetFromDb(IDbConnection connection, IDbTransaction transaction)
         {
-            return conn.QueryFirstOrDefault<ExampleVersion_T_DemoTableType>(this.GetSelectCommand(1), this, trsact);
+            return connection.QueryFirstOrDefault<ExampleVersion_T_DemoTableType>(this.GetSelectCommand(1), this, transaction);
         }
 
-        public void Reload(IDbConnection conn, IDbTransaction trsact)
+        public void Reload(IDbConnection connection, IDbTransaction transaction)
         {
-            var loaded = this.GetFromDb(conn, trsact);
+            var loaded = this.GetFromDb(connection, transaction);
             if (loaded == null)
             {
                 throw new InvalidOperationException("entity not found");
@@ -560,7 +560,7 @@ namespace ExampleVersion.Data
         public string GetSelectCommand(int maxCount = 1000, params string[] excludedColumns)
         {
             var cols = "[Id], [Message], [Type], [Status], [VersionTimestamp]".GetColumns(affolterNET.Data.Extensions.QuoteStyle.Brackets, excludedColumns);
-            return $"select top({maxCount}) {cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.Brackets)} from [ExampleVersion].[V_Demo]";
+            return $"select top({maxCount}) {cols.JoinColsForSelect(affolterNET.Data.Extensions.QuoteStyle.Brackets)} from [ExampleVersion].[V_Demo]";
         }
 
         public override string ToString()

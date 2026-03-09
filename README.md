@@ -205,4 +205,30 @@ dotnet build src/affolterNET.Data.sln
 dotnet test src/affolterNET.Data.sln
 ```
 
+## Troubleshooting
+
+### Docker containers won't start
+- Ensure Docker Desktop is running
+- Check if ports 1436 (SQL Server) or 5436 (PostgreSQL) are already in use: `lsof -i :1436` / `lsof -i :5436`
+- On Apple Silicon: SQL Server runs under emulation (linux/amd64) — the `platform mismatch` warning is expected and can be ignored
+
+### Integration tests fail with connection errors
+- Verify containers are running: `docker compose -f db/docker-compose.yml ps`
+- Wait for SQL Server to fully initialize (~15 seconds after container start)
+- Check that user secrets are configured with the correct connection strings (see Database Setup in CLAUDE.md)
+
+### DTO generation produces unexpected output
+- Ensure the database schema is up to date by running `dbup` before `gen`
+- Check `GeneratorCfg` for schema/table exclusions that might filter out expected tables
+- Verify the connection string points to the correct database
+
+### Optimistic concurrency (version mismatch) errors
+- `ConcurrencyException` is thrown when SaveById detects that the row was modified by another transaction
+- Reload the entity from the database and retry the operation
+- For PostgreSQL, ensure the `increment_version` trigger is created on versioned tables
+
+### SQL Server on Apple Silicon (ARM)
+- SQL Server 2019 runs under Rosetta emulation — performance may be lower than native
+- If the container crashes on startup, increase Docker memory allocation to at least 4 GB
+
 Thanks to Wolfgang for the [workaround](https://www.programmingwithwolfgang.com/azure-devops-publish-nuget/) when publishing NuGet packages from Azure DevOps.

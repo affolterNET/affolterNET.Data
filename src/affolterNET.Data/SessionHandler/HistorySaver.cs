@@ -5,6 +5,7 @@ using affolterNET.Data.Extensions;
 using affolterNET.Data.Interfaces;
 using affolterNET.Data.Interfaces.SessionHandler;
 using Dapper;
+using Serilog;
 
 namespace affolterNET.Data.SessionHandler;
 
@@ -107,7 +108,7 @@ public class HistorySaver : IHistorySaver
             await connection.DisposeAsync();
             if (ok != 1)
             {
-                Console.WriteLine("SaveHistory failed");
+                Log.Warning("SaveHistory failed");
             }
 
             return true;
@@ -123,14 +124,14 @@ public class HistorySaver : IHistorySaver
         }
         catch
         {
-            Console.WriteLine("Table creation error");
+            Log.Error("Table creation error");
             throw;
         }
     }
 
     public async Task<bool> CreateTable()
     {
-        Console.WriteLine($"create table {_historyTableName}");
+        Log.Information("Creating history table {TableName}", _historyTableName);
         try
         {
             var connection = new SqlConnection(_connectionString);
@@ -167,14 +168,14 @@ public class HistorySaver : IHistorySaver
 
         if (query.ExcludeFromHistory && containsWriteOperations)
         {
-            Console.WriteLine(
-                $"DEBUG-OUTPUT: {query.GetType().FullName} contains insert, update or delete but will not be saved for history");
+            Log.Debug("{QueryType} contains insert, update or delete but will not be saved for history",
+                query.GetType().FullName);
         }
 
         if (!query.ExcludeFromHistory && !containsWriteOperations)
         {
-            Console.WriteLine(
-                $"DEBUG-OUTPUT: {query.GetType().FullName} contains no write operations but will be saved for history");
+            Log.Debug("{QueryType} contains no write operations but will be saved for history",
+                query.GetType().FullName);
         }
     }
 }

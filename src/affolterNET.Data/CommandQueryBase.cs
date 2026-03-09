@@ -11,6 +11,7 @@ using affolterNET.Data.Interfaces;
 using affolterNET.Data.Models;
 using affolterNET.Data.Result;
 using Dapper;
+using Serilog;
 
 namespace affolterNET.Data
 {
@@ -78,7 +79,7 @@ namespace affolterNET.Data
 
         protected void AddParam(string propertyName, object propertyValue, string? sqlDataType = null)
         {
-            var pn = propertyName.StripSquareBrackets();
+            var pn = propertyName.StripQuoting();
             if (ParamsDict.ContainsKey(pn))
             {
                 ParamsDict[pn] = propertyValue;
@@ -255,7 +256,7 @@ namespace affolterNET.Data
                     return "geometry";
             }
 
-            Console.WriteLine($"type {csharpType.Name.ToLower()} ist nicht implementiert, gebe default zurück");
+            Log.Warning("SQL type mapping not implemented for {TypeName}, returning default", csharpType.Name);
             return def;
         }
     }

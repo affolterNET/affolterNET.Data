@@ -46,6 +46,10 @@ namespace affolterNET.Data.Commands
         {
             var saveInfo = await reader.ReadFirstOrDefaultAsync<SaveInfo>()
                            ?? throw new InvalidOperationException("SaveById returned no result");
+            if (saveInfo.Action == Constants.NoAction)
+            {
+                throw new ConcurrencyException(saveInfo.Schema ?? "unknown", saveInfo.Table ?? "unknown", saveInfo.Id);
+            }
             if (_select)
             {
                 var dto = reader.Read<T>();

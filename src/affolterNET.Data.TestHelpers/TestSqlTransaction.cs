@@ -7,7 +7,7 @@ namespace affolterNET.Data.TestHelpers
 {
     public class TestSqlTransaction : DbTransaction
     {
-        public TestSqlTransaction(SqlTransaction trsact) { }
+        public TestSqlTransaction(SqlTransaction transaction) { }
 
         protected override DbConnection DbConnection { get; }
 

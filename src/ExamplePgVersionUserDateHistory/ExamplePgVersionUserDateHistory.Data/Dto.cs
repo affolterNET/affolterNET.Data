@@ -116,15 +116,15 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public static class Cols
         {
-            public const string Id = """id""";
-            public const string Message = """message""";
-            public const string Status = """status""";
-            public const string TypeId = """type_id""";
-            public const string InsertDate = """insert_date""";
-            public const string InsertUser = """insert_user""";
-            public const string UpdateDate = """update_date""";
-            public const string UpdateUser = """update_user""";
-            public const string VersionTimestamp = """version_timestamp""";
+            public const string Id = "\"id\"";
+            public const string Message = "\"message\"";
+            public const string Status = "\"status\"";
+            public const string TypeId = "\"type_id\"";
+            public const string InsertDate = "\"insert_date\"";
+            public const string InsertUser = "\"insert_user\"";
+            public const string UpdateDate = "\"update_date\"";
+            public const string UpdateUser = "\"update_user\"";
+            public const string VersionTimestamp = "\"version_timestamp\"";
         }
 
         public bool IsAutoincrementId()
@@ -139,13 +139,13 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetSelectCommand(int maxCount = 1000, params string[] excludedColumns)
         {
-            var cols = "\"id\", \"message\", \"type_id\", \"status\", \"insert_date\", \"insert_user\", \"update_date\", \"update_user\", \"version_timestamp\"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
-            return $"select {cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)} from \"example_pg_version_user_date_history\".\"demo_table\" where (@Id is null or \"id\"=@Id) limit {maxCount}";
+            var cols = "\"id\"|Id, \"message\"|Message, \"type_id\"|TypeId, \"status\"|Status, \"insert_date\"|InsertDate, \"insert_user\"|InsertUser, \"update_date\"|UpdateDate, \"update_user\"|UpdateUser, \"version_timestamp\"|VersionTimestamp".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
+            return $"select {cols.JoinColsForSelect(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)} from \"example_pg_version_user_date_history\".\"demo_table\" where (@Id::uuid is null or \"id\"=@Id) limit {maxCount}";
         }
 
         public string GetInsertCommand(bool returnScopeIdentity = false, params string[] excludedColumns)
         {
-            var cols = "\"id\", \"message\", \"type_id\", \"status\", \"insert_date\", \"insert_user\"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
+            var cols = "\"id\"|Id, \"message\"|Message, \"type_id\"|TypeId, \"status\"|Status, \"insert_date\"|InsertDate, \"insert_user\"|InsertUser".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
             var sql = $"insert into \"example_pg_version_user_date_history\".\"demo_table\" ({cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)}) values ({cols.JoinCols(true, affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)})";
             if (returnScopeIdentity)
             {
@@ -157,7 +157,7 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetUpdateCommand(params string[] excludedColumns)
         {
-            var cols = "\"id\", \"message\", \"type_id\", \"status\", \"update_date\", \"update_user\"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
+            var cols = "\"id\"|Id, \"message\"|Message, \"type_id\"|TypeId, \"status\"|Status, \"update_date\"|UpdateDate, \"update_user\"|UpdateUser".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
             return $"update \"example_pg_version_user_date_history\".\"demo_table\" set {cols.JoinForUpdate(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)} where \"id\"=@Id and \"version_timestamp\"=@VersionTimestamp";
         }
 
@@ -173,16 +173,19 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetSaveByIdCommand(bool select = false, params string[] excludedColumns)
         {
+            var insertSql = GetInsertCommand(false, excludedColumns);
+            var insertAsSelect = insertSql.Replace("values (", "select ").TrimEnd(')');
             return @$"
                         WITH upsert AS (
                             {GetUpdateCommand(excludedColumns)} RETURNING *
                         ), inserted AS (
-                            {GetInsertCommand(false, excludedColumns)}
+                            {insertAsSelect}
                             WHERE NOT EXISTS (SELECT 1 FROM upsert)
+                            ON CONFLICT (""id"") DO NOTHING
                             RETURNING *
                         )
                         SELECT 'example_pg_version_user_date_history' AS ""Schema"", 'demo_table' AS ""Table"",
-                            Id::text AS ""Id"",
+                            @Id::text AS ""Id"",
                             CASE
                                 WHEN EXISTS (SELECT 1 FROM upsert) THEN '{Constants.Updated}'
                                 WHEN EXISTS (SELECT 1 FROM inserted) THEN '{Constants.Inserted}'
@@ -191,14 +194,14 @@ namespace ExamplePgVersionUserDateHistory.Data
                         {(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}";
         }
 
-        public example_pg_version_user_date_history_demo_table? GetFromDb(IDbConnection conn, IDbTransaction trsact)
+        public example_pg_version_user_date_history_demo_table? GetFromDb(IDbConnection connection, IDbTransaction transaction)
         {
-            return conn.QueryFirstOrDefault<example_pg_version_user_date_history_demo_table>(this.GetSelectCommand(1), this, trsact);
+            return connection.QueryFirstOrDefault<example_pg_version_user_date_history_demo_table>(this.GetSelectCommand(1), this, transaction);
         }
 
-        public void Reload(IDbConnection conn, IDbTransaction trsact)
+        public void Reload(IDbConnection connection, IDbTransaction transaction)
         {
-            var loaded = this.GetFromDb(conn, trsact);
+            var loaded = this.GetFromDb(connection, transaction);
             if (loaded == null)
             {
                 throw new InvalidOperationException("entity not found");
@@ -243,7 +246,7 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetVersionName()
         {
-            return "version_timestamp";
+            return "VersionTimestamp";
         }
 
         public string GetIsActiveName()
@@ -257,7 +260,7 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetUpdatedUserName()
         {
-            return "update_user";
+            return "UpdateUser";
         }
 
         public void SetUpdatedUser(string userName)
@@ -267,7 +270,7 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetInsertedUserName()
         {
-            return "insert_user";
+            return "InsertUser";
         }
 
         public void SetInsertedUser(string userName)
@@ -277,7 +280,7 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetUpdatedDateName()
         {
-            return "update_date";
+            return "UpdateDate";
         }
 
         public void SetUpdatedDate(DateTime date)
@@ -287,7 +290,7 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetInsertedDateName()
         {
-            return "insert_date";
+            return "InsertDate";
         }
 
         public void SetInsertedDate(DateTime date)
@@ -322,8 +325,8 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public static class Cols
         {
-            public const string Id = """id""";
-            public const string Name = """name""";
+            public const string Id = "\"id\"";
+            public const string Name = "\"name\"";
         }
 
         public bool IsAutoincrementId()
@@ -338,13 +341,13 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetSelectCommand(int maxCount = 1000, params string[] excludedColumns)
         {
-            var cols = "\"id\", \"name\"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
-            return $"select {cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)} from \"example_pg_version_user_date_history\".\"demo_table_type\" where (@Id is null or \"id\"=@Id) limit {maxCount}";
+            var cols = "\"id\"|Id, \"name\"|Name".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
+            return $"select {cols.JoinColsForSelect(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)} from \"example_pg_version_user_date_history\".\"demo_table_type\" where (@Id::uuid is null or \"id\"=@Id) limit {maxCount}";
         }
 
         public string GetInsertCommand(bool returnScopeIdentity = false, params string[] excludedColumns)
         {
-            var cols = "\"id\", \"name\"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
+            var cols = "\"id\"|Id, \"name\"|Name".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
             var sql = $"insert into \"example_pg_version_user_date_history\".\"demo_table_type\" ({cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)}) values ({cols.JoinCols(true, affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)})";
             if (returnScopeIdentity)
             {
@@ -356,7 +359,7 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetUpdateCommand(params string[] excludedColumns)
         {
-            var cols = "\"id\", \"name\"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
+            var cols = "\"id\"|Id, \"name\"|Name".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
             return $"update \"example_pg_version_user_date_history\".\"demo_table_type\" set {cols.JoinForUpdate(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)} where \"id\"=@Id";
         }
 
@@ -372,16 +375,19 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetSaveByIdCommand(bool select = false, params string[] excludedColumns)
         {
+            var insertSql = GetInsertCommand(false, excludedColumns);
+            var insertAsSelect = insertSql.Replace("values (", "select ").TrimEnd(')');
             return @$"
                         WITH upsert AS (
                             {GetUpdateCommand(excludedColumns)} RETURNING *
                         ), inserted AS (
-                            {GetInsertCommand(false, excludedColumns)}
+                            {insertAsSelect}
                             WHERE NOT EXISTS (SELECT 1 FROM upsert)
+                            ON CONFLICT (""id"") DO NOTHING
                             RETURNING *
                         )
                         SELECT 'example_pg_version_user_date_history' AS ""Schema"", 'demo_table_type' AS ""Table"",
-                            Id::text AS ""Id"",
+                            @Id::text AS ""Id"",
                             CASE
                                 WHEN EXISTS (SELECT 1 FROM upsert) THEN '{Constants.Updated}'
                                 WHEN EXISTS (SELECT 1 FROM inserted) THEN '{Constants.Inserted}'
@@ -390,14 +396,14 @@ namespace ExamplePgVersionUserDateHistory.Data
                         {(select ? GetSelectCommand(1, excludedColumns) : string.Empty)}";
         }
 
-        public example_pg_version_user_date_history_demo_table_type? GetFromDb(IDbConnection conn, IDbTransaction trsact)
+        public example_pg_version_user_date_history_demo_table_type? GetFromDb(IDbConnection connection, IDbTransaction transaction)
         {
-            return conn.QueryFirstOrDefault<example_pg_version_user_date_history_demo_table_type>(this.GetSelectCommand(1), this, trsact);
+            return connection.QueryFirstOrDefault<example_pg_version_user_date_history_demo_table_type>(this.GetSelectCommand(1), this, transaction);
         }
 
-        public void Reload(IDbConnection conn, IDbTransaction trsact)
+        public void Reload(IDbConnection connection, IDbTransaction transaction)
         {
-            var loaded = this.GetFromDb(conn, trsact);
+            var loaded = this.GetFromDb(connection, transaction);
             if (loaded == null)
             {
                 throw new InvalidOperationException("entity not found");
@@ -570,15 +576,15 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public static class Cols
         {
-            public const string Id = """id""";
-            public const string Message = """message""";
-            public const string Status = """status""";
-            public const string TypeId = """type_id""";
-            public const string InsertDate = """insert_date""";
-            public const string InsertUser = """insert_user""";
-            public const string UpdateDate = """update_date""";
-            public const string UpdateUser = """update_user""";
-            public const string VersionTimestamp = """version_timestamp""";
+            public const string Id = "\"id\"";
+            public const string Message = "\"message\"";
+            public const string Status = "\"status\"";
+            public const string TypeId = "\"type_id\"";
+            public const string InsertDate = "\"insert_date\"";
+            public const string InsertUser = "\"insert_user\"";
+            public const string UpdateDate = "\"update_date\"";
+            public const string UpdateUser = "\"update_user\"";
+            public const string VersionTimestamp = "\"version_timestamp\"";
         }
 
         public string GetTableName()
@@ -588,8 +594,8 @@ namespace ExamplePgVersionUserDateHistory.Data
 
         public string GetSelectCommand(int maxCount = 1000, params string[] excludedColumns)
         {
-            var cols = "\"id\", \"message\", \"type_id\", \"status\", \"insert_date\", \"insert_user\", \"update_date\", \"update_user\", \"version_timestamp\"".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
-            return $"select {cols.JoinCols(false, affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)} from \"example_pg_version_user_date_history\".\"v_demo\" limit {maxCount}";
+            var cols = "\"id\"|Id, \"message\"|Message, \"type_id\"|TypeId, \"status\"|Status, \"insert_date\"|InsertDate, \"insert_user\"|InsertUser, \"update_date\"|UpdateDate, \"update_user\"|UpdateUser, \"version_timestamp\"|VersionTimestamp".GetColumns(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes, excludedColumns);
+            return $"select {cols.JoinColsForSelect(affolterNET.Data.Extensions.QuoteStyle.DoubleQuotes)} from \"example_pg_version_user_date_history\".\"v_demo\" limit {maxCount}";
         }
 
         public override string ToString()

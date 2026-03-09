@@ -6,33 +6,33 @@ namespace affolterNET.Data.TestHelpers
 {
     public sealed class ConnectionDecorator : IConnectionDecorator
     {
-        private readonly IDbConnection _conn;
+        private readonly IDbConnection _connection;
 
-        private IDbTransaction? _trsact;
+        private IDbTransaction? _transaction;
 
-        public ConnectionDecorator(IDbConnection conn)
+        public ConnectionDecorator(IDbConnection connection)
         {
-            _conn = conn;
+            _connection = connection;
             ConnectionString = "";
         }
 
 #pragma warning disable 8767
         public string ConnectionString {
-            get => _conn.ConnectionString;
+            get => _connection.ConnectionString;
             set
             {}
         } 
 #pragma warning restore 8767
 
-        public int ConnectionTimeout => _conn.ConnectionTimeout;
+        public int ConnectionTimeout => _connection.ConnectionTimeout;
 
-        public string Database => _conn.Database;
+        public string Database => _connection.Database;
 
-        public ConnectionState State => _conn.State;
+        public ConnectionState State => _connection.State;
 
         public void Dispose()
         {
-            _conn.Dispose();
+            _connection.Dispose();
         }
 
         public IDbTransaction BeginTransaction()
@@ -42,39 +42,39 @@ namespace affolterNET.Data.TestHelpers
 
         public IDbTransaction BeginTransaction(IsolationLevel il)
         {
-            if (_trsact == null)
+            if (_transaction == null)
             {
-                var trans = _conn.BeginTransaction(il);
-                _trsact = new TransactionDecorator(trans);
+                var trans = _connection.BeginTransaction(il);
+                _transaction = new TransactionDecorator(trans);
             }
 
-            return _trsact;
+            return _transaction;
         }
 
         public void Close()
         {
-            _conn.Close();
+            _connection.Close();
         }
 
         public void ChangeDatabase(string databaseName)
         {
-            _conn.ChangeDatabase(databaseName);
+            _connection.ChangeDatabase(databaseName);
         }
 
         public IDbCommand CreateCommand()
         {
-            return _conn.CreateCommand();
+            return _connection.CreateCommand();
         }
 
         public void Open()
         {
-            _conn.Open();
+            _connection.Open();
         }
 
         public void RollbackTestTransaction()
         {
-            _trsact?.Rollback();
-            _trsact = null;
+            _transaction?.Rollback();
+            _transaction = null;
         }
     }
 }
