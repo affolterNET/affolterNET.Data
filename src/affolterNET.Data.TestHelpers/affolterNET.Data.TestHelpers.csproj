@@ -10,7 +10,7 @@
     <PackageTags>SQL, DB, Unit, Testing</PackageTags>
     <RepositoryUrl>https://github.com/affolterNET/affolterNET.Data</RepositoryUrl>
     <ProjectGuid>BB3D9D5C-5917-436B-B3AC-4A20CAF0FD67</ProjectGuid>
-    <Version>3.1.0</Version>
+    <Version>3.1.1</Version>
     <IsPackable>true</IsPackable>
     <Authors>Martin Affolter</Authors>
     <Company>affolter.NET GmbH</Company>

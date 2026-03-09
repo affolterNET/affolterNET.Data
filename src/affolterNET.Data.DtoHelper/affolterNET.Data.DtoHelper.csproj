@@ -10,7 +10,7 @@
     <PackageTags>SQL, DB, Generate, Dto, Code, C#</PackageTags>
     <RepositoryUrl>https://github.com/affolterNET/affolterNET.Data</RepositoryUrl>
     <ProjectGuid>024E3895-4BC1-4A57-938A-009FFF961644</ProjectGuid>
-    <Version>3.1.0</Version>
+    <Version>3.1.1</Version>
     <IsPackable>true</IsPackable>
     <Authors>Martin Affolter</Authors>
     <Company>affolter.NET GmbH</Company>
