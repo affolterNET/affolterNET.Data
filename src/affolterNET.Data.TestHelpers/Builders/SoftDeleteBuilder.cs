@@ -13,8 +13,8 @@ namespace affolterNET.Data.TestHelpers.Builders
 
         private string sql = string.Empty;
 
-        public SoftDeleteBuilder(IDbConnection conn, IDbTransaction trsact, IDtoBase dto)
-            : base(conn, trsact, dto)
+        public SoftDeleteBuilder(IDbConnection connection, IDbTransaction transaction, IDtoBase dto)
+            : base(connection, transaction, dto)
         {
             updateStatements.Add("IstAktiv=@IstAktiv");
             Paras.Add("IstAktiv", 0);
@@ -32,12 +32,9 @@ namespace affolterNET.Data.TestHelpers.Builders
                 sql += $" set {string.Join(", ", updateStatements)}";
             }
 
-            if (WhereStatements.Count > 0)
-            {
-                sql += $" where {string.Join(" and ", WhereStatements)}";
-            }
+            sql += BuildWhereClause();
 
-            return Conn.Execute(sql, Paras, Trsact);
+            return Connection.Execute(sql, Paras, Transaction);
         }
 
         public SoftDeleteBuilder<T> WithWhere(string col, object value, bool whereIn = false)

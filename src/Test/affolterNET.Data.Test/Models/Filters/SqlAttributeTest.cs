@@ -18,7 +18,7 @@ namespace affolterNET.Data.Test.Models.Filters
         [Theory]
         [InlineData("{ Column: '[Test]' }", "Test", null, "[Test]", "@1Test", "1Test")]
         [InlineData("{ Column: '[Test]', Prefix: 'i' }", "Test", "i", "i.[Test]", "@i1Test", "i1Test")]
-        public void FromJsonTests(string json, string expCol, string expPrefix, string expString, string expParamIdent, string expParam)
+        public void FromJsonTests(string json, string expCol, string? expPrefix, string expString, string expParamIdent, string expParam)
         {
             var attr = JsonConvert.DeserializeObject<SqlAttribute>(json)!;
             Assert.Equal(expCol, attr.Column);

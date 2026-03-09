@@ -8,9 +8,9 @@ namespace affolterNET.Data.TestHelpers
     {
         private readonly bool _allowCommit;
 
-        public TransactionDecorator(IDbTransaction trsact, bool allowCommit = false)
+        public TransactionDecorator(IDbTransaction transaction, bool allowCommit = false)
         {
-            WrappedTransaction = trsact;
+            WrappedTransaction = transaction;
             _allowCommit = allowCommit;
         }
 

@@ -23,6 +23,11 @@ public class SqlServerDialect : ISqlDialect
 
     public string FormatColumnNameConstant(string dbColumnName) => $"[{dbColumnName}]";
 
+    public string FormatNullableWhereClause(string paramName, string quotedColumnName, string? dataType)
+    {
+        return $"(@{paramName} is null or {quotedColumnName}=@{paramName})";
+    }
+
     public string FormatSelectTop(string cols, string tableName, string where, int maxCount)
     {
         return $"select top({{maxCount}}) {cols} from {tableName}{where}";
@@ -33,33 +38,25 @@ public class SqlServerDialect : ISqlDialect
         return "; select scope_identity() as id;";
     }
 
-    public string FormatSaveById(
-        string tableName,
-        string pkColumn,
-        string updateCall,
-        string insertCall,
-        string selectCall,
-        string pkParamName,
-        bool hasAutoIncrementPk,
-        bool hasSelect)
+    public string FormatSaveById(SaveByIdParams p)
     {
-        var schema = tableName.Contains(".") ? tableName.Split('.')[0].Trim('[', ']') : "";
-        var table = tableName.Contains(".") ? tableName.Split('.')[1].Trim('[', ']') : tableName.Trim('[', ']');
+        var schema = p.TableName.Contains(".") ? p.TableName.Split('.')[0].Trim('[', ']') : "";
+        var table = p.TableName.Contains(".") ? p.TableName.Split('.')[1].Trim('[', ']') : p.TableName.Trim('[', ']');
 
         return $@"return
                         @$""
                         declare @rowcnt int
-                        if exists (select {pkColumn} from {tableName} where {pkColumn} = @{pkParamName})
+                        if exists (select {p.PkColumn} from {p.TableName} where {p.PkColumn} = @{p.PkParamName})
                             begin
-                                {{{updateCall}}}; set @rowcnt = (select @@rowcount);
-                                select '{schema}' as [Schema], '{table}' as [Table], convert(nvarchar(50), @{pkParamName}) as [Id], case when @rowcnt = 0 then '{{Constants.NoAction}}' else '{{Constants.Updated}}' end as [Action];
+                                {{{p.UpdateCall}}}; set @rowcnt = (select @@rowcount);
+                                select '{schema}' as [Schema], '{table}' as [Table], convert(nvarchar(50), @{p.PkParamName}) as [Id], case when @rowcnt = 0 then '{{Constants.NoAction}}' else '{{Constants.Updated}}' end as [Action];
                             end
                         else
                             begin
-                                {{{insertCall}}}; set @rowcnt = (select @@rowcount);
-                                select '{schema}' as [Schema], '{table}' as [Table], convert(nvarchar(50), @{pkParamName}) as [Id], case when @rowcnt = 0 then '{{Constants.NoAction}}' else '{{Constants.Inserted}}' end as [Action];
+                                {{{p.InsertCall}}}; set @rowcnt = (select @@rowcount);
+                                select '{schema}' as [Schema], '{table}' as [Table], convert(nvarchar(50), @{p.PkParamName}) as [Id], case when @rowcnt = 0 then '{{Constants.NoAction}}' else '{{Constants.Inserted}}' end as [Action];
                             end
-                        {{{selectCall}}}"";";
+                        {{{p.SelectCall}}}"";";
     }
 
     public string FormatCastToString(string param)

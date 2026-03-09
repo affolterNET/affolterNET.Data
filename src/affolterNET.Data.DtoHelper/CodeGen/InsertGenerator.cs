@@ -9,28 +9,28 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 {
     public class InsertGenerator
     {
-        private readonly Table tbl;
-        private readonly ISqlDialect dialect;
+        private readonly Table _tbl;
+        private readonly ISqlDialect _dialect;
 
         public InsertGenerator(Table tbl, ISqlDialect dialect)
         {
-            this.tbl = tbl;
-            this.dialect = dialect;
+            _tbl = tbl;
+            _dialect = dialect;
         }
 
         public void Generate(Action<MemberDeclarationSyntax> add)
         {
-            var cols = tbl.AllColumns
+            var cols = _tbl.AllColumns
                 .Where(
                     c => !c.Ignore && !c.IsPkWithAutoincrement() && !c.IsVersionCol() &&
                          !c.IsUpdateTriggerField(true) && !c.IsActiveCol())
-                .Select(c => c.Name).ToList();
-            var tableName = dialect.QuoteTableName(tbl.Schema, tbl.Name);
-            var quoteStyle = dialect.QuoteStyle;
-            var colsJoin = dialect.EscapeForCSharp(cols.JoinCols(false, quoteStyle));
-            var pkCol = tbl.GetPrimaryKeyColumn();
-            var returning = dialect.EscapeForCSharp(dialect.FormatInsertReturning(pkCol.Name));
-            var escapedTableName = dialect.EscapeForCSharp(tableName);
+                .Select(c => c.Name != c.PropertyName ? $"{c.Name}|{c.PropertyName}" : c.Name).ToList();
+            var tableName = _dialect.QuoteTableName(_tbl.Schema, _tbl.Name);
+            var quoteStyle = _dialect.QuoteStyle;
+            var colsJoin = _dialect.EscapeForCSharp(cols.JoinColsForCodeGen(quoteStyle));
+            var pkCol = _tbl.GetPrimaryKeyColumn();
+            var returning = _dialect.EscapeForCSharp(_dialect.FormatInsertReturning(pkCol.Name));
+            var escapedTableName = _dialect.EscapeForCSharp(tableName);
 
             var sg = new StringGenerator(
                 $@"

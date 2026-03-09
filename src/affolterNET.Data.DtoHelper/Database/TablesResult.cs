@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace affolterNET.Data.DtoHelper.Database
 {
-    public class TablesResultat
+    public class TablesResult
     {
-        public TablesResultat(IEnumerable<string>? schemas = null)
+        public TablesResult(IEnumerable<string>? schemas = null)
         {
             if (schemas != null)
             {

@@ -9,7 +9,7 @@ using Npgsql;
 
 namespace affolterNET.Data.DtoHelper.Database;
 
-public class PostgreSqlSchemaReader : ISchemaReader
+public class PostgreSqlSchemaReader : SchemaReaderBase
 {
     private const string TableSql = @"
         SELECT table_schema, table_name, table_type
@@ -79,16 +79,13 @@ public class PostgreSqlSchemaReader : ISchemaReader
             AND tgt_ns.nspname = @schemaName
             AND tgt_class.relname = @tableName";
 
-    private readonly TextWriter _tw;
-
-    public PostgreSqlSchemaReader(TextWriter tw)
+    public PostgreSqlSchemaReader(TextWriter tw) : base(tw)
     {
-        _tw = tw;
     }
 
-    public Tables ReadSchema(IDbConnection cn, GeneratorCfg cfg, ISqlDialect dialect)
+    public override Tables ReadSchema(IDbConnection connection, GeneratorCfg cfg, ISqlDialect dialect)
     {
-        var npgsqlCn = (NpgsqlConnection)cn;
+        var npgsqlCn = (NpgsqlConnection)connection;
         var result = new Tables();
 
         using (var cmd = new NpgsqlCommand(TableSql, npgsqlCn))
@@ -126,24 +123,17 @@ public class PostgreSqlSchemaReader : ISchemaReader
             }
             catch (Exception x)
             {
-                var error = x.Message.Replace("\r\n", "\n").Replace("\n", " ");
-                _tw.WriteLine(string.Empty);
-                _tw.WriteLine(
-                    "// -----------------------------------------------------------------------------------------");
-                _tw.WriteLine("// Failed to get relationships for `{0}` - {1}", tbl.Name, error);
-                _tw.WriteLine(
-                    "// -----------------------------------------------------------------------------------------");
-                _tw.WriteLine(string.Empty);
+                LogRelationshipError(tbl.Name, x);
             }
         }
 
         return result;
     }
 
-    private void LoadColumns(NpgsqlConnection cn, Table tbl, GeneratorCfg cfg, ISqlDialect dialect)
+    private void LoadColumns(NpgsqlConnection connection, Table tbl, GeneratorCfg cfg, ISqlDialect dialect)
     {
         tbl.AllColumns.Clear();
-        using var cmd = new NpgsqlCommand(ColumnSql, cn);
+        using var cmd = new NpgsqlCommand(ColumnSql, connection);
         cmd.Parameters.AddWithValue("@tableName", tbl.Name);
         cmd.Parameters.AddWithValue("@schemaName", tbl.Schema);
 
@@ -188,9 +178,9 @@ public class PostgreSqlSchemaReader : ISchemaReader
         }
     }
 
-    private void MarkPrimaryKeys(NpgsqlConnection cn, Table tbl)
+    private void MarkPrimaryKeys(NpgsqlConnection connection, Table tbl)
     {
-        using var cmd = new NpgsqlCommand(PrimaryKeySql, cn);
+        using var cmd = new NpgsqlCommand(PrimaryKeySql, connection);
         cmd.Parameters.AddWithValue("@tableName", tbl.Name);
         cmd.Parameters.AddWithValue("@schemaName", tbl.Schema);
 
@@ -207,9 +197,9 @@ public class PostgreSqlSchemaReader : ISchemaReader
         }
     }
 
-    private void LoadOuterKeys(NpgsqlConnection cn, Table tbl, ISqlDialect dialect)
+    private void LoadOuterKeys(NpgsqlConnection connection, Table tbl, ISqlDialect dialect)
     {
-        using var cmd = new NpgsqlCommand(ForeignKeysSql, cn);
+        using var cmd = new NpgsqlCommand(ForeignKeysSql, connection);
         cmd.Parameters.AddWithValue("@tableName", tbl.Name);
         cmd.Parameters.AddWithValue("@schemaName", tbl.Schema);
 
@@ -237,9 +227,9 @@ public class PostgreSqlSchemaReader : ISchemaReader
         }
     }
 
-    private void LoadInnerKeys(NpgsqlConnection cn, Table tbl, ISqlDialect dialect)
+    private void LoadInnerKeys(NpgsqlConnection connection, Table tbl, ISqlDialect dialect)
     {
-        using var cmd = new NpgsqlCommand(IncomingForeignKeysSql, cn);
+        using var cmd = new NpgsqlCommand(IncomingForeignKeysSql, connection);
         cmd.Parameters.AddWithValue("@tableName", tbl.Name);
         cmd.Parameters.AddWithValue("@schemaName", tbl.Schema);
 
@@ -265,27 +255,5 @@ public class PostgreSqlSchemaReader : ISchemaReader
         {
             tbl.InnerKeys.Add(key);
         }
-    }
-
-    private void FixPropertyNames(List<Key> result)
-    {
-        foreach (var key in result)
-        {
-            if (result.Count(k => k.PropertyName == key.PropertyName) > 1)
-            {
-                key.PropertyName = key.Name;
-            }
-        }
-    }
-
-    private string RenameSchema(Table tbl, Dictionary<string, string> schemaRenames)
-    {
-        var rename = schemaRenames.Where(s => s.Key == tbl.Schema).Select(s => s.Value).SingleOrDefault();
-        if (string.IsNullOrWhiteSpace(rename))
-        {
-            rename = tbl.Schema;
-        }
-
-        return $"{rename}_{tbl.Name}";
     }
 }

@@ -8,20 +8,20 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 {
     public class DeleteGenerator
     {
-        private readonly Table tbl;
-        private readonly ISqlDialect dialect;
+        private readonly Table _tbl;
+        private readonly ISqlDialect _dialect;
 
         public DeleteGenerator(Table tbl, ISqlDialect dialect)
         {
-            this.tbl = tbl;
-            this.dialect = dialect;
+            _tbl = tbl;
+            _dialect = dialect;
         }
 
         public void Generate(Action<MemberDeclarationSyntax> add)
         {
-            var pkCol = tbl.AllColumns.FirstOrDefault(c => c.IsPK);
-            var versionCol = tbl.AllColumns.FirstOrDefault(c => c.IsVersionCol());
-            var tableName = dialect.EscapeForCSharp(dialect.QuoteTableName(tbl.Schema, tbl.Name));
+            var pkCol = _tbl.AllColumns.FirstOrDefault(c => c.IsPK);
+            var versionCol = _tbl.AllColumns.FirstOrDefault(c => c.IsVersionCol());
+            var tableName = _dialect.EscapeForCSharp(_dialect.QuoteTableName(_tbl.Schema, _tbl.Name));
             string sql;
             var sqlAll = $"return \"delete from {tableName}";
             if (pkCol == null)
@@ -30,11 +30,11 @@ namespace affolterNET.Data.DtoHelper.CodeGen
             }
             else
             {
-                var updateWhere = dialect.EscapeForCSharp($" where {dialect.QuoteIdentifier(pkCol.Name)}=@{pkCol.PropertyName}");
+                var updateWhere = _dialect.EscapeForCSharp($" where {_dialect.QuoteIdentifier(pkCol.Name)}=@{pkCol.PropertyName}");
                 var versionWhere = string.Empty;
                 if (versionCol != null)
                 {
-                    versionWhere = dialect.EscapeForCSharp($" and {dialect.QuoteIdentifier(versionCol.Name)}=@{versionCol.PropertyName}");
+                    versionWhere = _dialect.EscapeForCSharp($" and {_dialect.QuoteIdentifier(versionCol.Name)}=@{versionCol.PropertyName}");
                 }
 
                 sql = $"{sqlAll}{updateWhere}{versionWhere}\"";

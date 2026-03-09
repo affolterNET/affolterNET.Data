@@ -43,7 +43,7 @@ namespace affolterNET.Data.TestHelpers.Builders
             Connection.RollbackTestTransaction();
             if (!_assertHelper.InputChecked && _checkParameters)
             {
-                Assert.True(false, "Input Parameter wurden nicht überprüft");
+                Assert.Fail("Input Parameter wurden nicht überprüft");
             }
         }
 

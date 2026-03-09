@@ -16,7 +16,7 @@ namespace affolterNET.Data.Commands
             Sql = dto.GetDeleteAllCommand();
         }
         
-        public DeleteEntityCommand(object pkValue, byte[]? timestamp = null, string? param = null)
+        public DeleteEntityCommand(object pkValue, object? timestamp = null, string? param = null)
         {
             var dto = Activator.CreateInstance<T>();
             if (dto.GetVersionName() != Constants.NotAvailable && timestamp == null)

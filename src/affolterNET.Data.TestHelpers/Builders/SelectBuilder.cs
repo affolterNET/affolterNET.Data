@@ -10,9 +10,10 @@ namespace affolterNET.Data.TestHelpers.Builders
         where T : IDtoBase
     {
         private string sql = string.Empty;
+        private string _suffix = string.Empty;
 
-        public SelectBuilder(IDbConnection conn, IDbTransaction trsact, IDtoBase dto)
-            : base(conn, trsact, dto)
+        public SelectBuilder(IDbConnection connection, IDbTransaction transaction, IDtoBase dto)
+            : base(connection, transaction, dto)
         {
         }
 
@@ -29,7 +30,15 @@ namespace affolterNET.Data.TestHelpers.Builders
 
         public T ExecuteSingle()
         {
-            sql = $"select top(1) * from {TableName}";
+            if (IsPostgres)
+            {
+                sql = $"select * from {TableName}";
+                _suffix = " limit 1";
+            }
+            else
+            {
+                sql = $"select top(1) * from {TableName}";
+            }
             return RunExecute().FirstOrDefault()!;
         }
 
@@ -41,12 +50,9 @@ namespace affolterNET.Data.TestHelpers.Builders
 
         private IEnumerable<T> RunExecute()
         {
-            if (WhereStatements.Count > 0)
-            {
-                sql += $" where {string.Join(" and ", WhereStatements)}";
-            }
-
-            var list = Conn.Query<T>(sql, Paras, Trsact);
+            sql += BuildWhereClause();
+            sql += _suffix;
+            var list = Connection.Query<T>(sql, Paras, Transaction);
             return list;
         }
     }

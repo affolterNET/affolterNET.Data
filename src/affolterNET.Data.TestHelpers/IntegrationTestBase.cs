@@ -2,10 +2,12 @@
 using affolterNET.Data.Interfaces;
 using affolterNET.Data.Interfaces.SessionHandler;
 using affolterNET.Data.TestHelpers.Builders;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace affolterNET.Data.TestHelpers
 {
+    [Trait("Category", "Integration")]
     public abstract class IntegrationTestBase : IDisposable
     {
         private readonly IDtoFactory _dtoFactory;

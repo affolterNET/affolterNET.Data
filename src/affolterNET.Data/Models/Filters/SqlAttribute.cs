@@ -5,11 +5,17 @@ namespace affolterNET.Data.Models.Filters
     public class SqlAttribute
     {
         private string? _column;
+        private QuoteStyle _quoteStyle = QuoteStyle.Brackets;
 
         public SqlAttribute() { }
 
         public SqlAttribute(string column, string prefix = "")
         {
+            if (column.Contains("\""))
+            {
+                _quoteStyle = QuoteStyle.DoubleQuotes;
+            }
+
             Column = column;
             Prefix = prefix;
         }
@@ -19,13 +25,13 @@ namespace affolterNET.Data.Models.Filters
         public string Column
         {
             get => _column!;
-            set => _column = value?.StripSquareBrackets();
+            set => _column = value?.StripQuoting();
         }
 
         public override string ToString()
         {
             var prefix = string.IsNullOrWhiteSpace(Prefix) ? "" : $"{Prefix}.";
-            return $"{prefix}{Column.EnsureSquareBrackets()}";
+            return $"{prefix}{Column.EnsureQuoting(_quoteStyle)}";
         }
 
         public string ToSqlParamIdentifier(int index)

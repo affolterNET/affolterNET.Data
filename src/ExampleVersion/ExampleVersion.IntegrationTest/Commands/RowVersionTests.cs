@@ -66,7 +66,7 @@ public class RowVersionTests : IntegrationTest
     [Fact]
     public void CanNotUpdateWhenChanged()
     {
-        CQB<SaveInfo>()
+        var builder = CQB<SaveInfo>()
             .Arrange(db =>
             {
                 var dto = new ExampleVersion_T_DemoTable
@@ -79,23 +79,20 @@ public class RowVersionTests : IntegrationTest
                 db.Insert(dto);
                 var reloaded = db.SelectById<ExampleVersion_T_DemoTable>(dto.Id);
                 Assert.NotNull(reloaded);
-                
+
                 // different update
                 db.Update<ExampleVersion_T_DemoTable>().WithUpdate(ExampleVersion_T_DemoTable.Cols.Message.StripSquareBrackets(), "somebody else").Execute();
-                
+
                 reloaded.Message = "I was reloaded";
                 return new SaveEntityCommand<ExampleVersion_T_DemoTable>(reloaded);
-            })
-            .ActAndAssert((result, ah) =>
-            {
-                Assert.Equal(Constants.NoAction, result.Data.Action);
             });
+        Assert.Throws<ConcurrencyException>(() => builder.Act());
     }
-    
+
     [Fact]
     public void CanNotUpdateWithoutTimestamp()
     {
-        CQB<SaveInfo>()
+        var builder = CQB<SaveInfo>()
             .Arrange(db =>
             {
                 var dto = new ExampleVersion_T_DemoTable
@@ -111,10 +108,7 @@ public class RowVersionTests : IntegrationTest
                 reloaded.VersionTimestamp = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 };
                 reloaded.Message = "I was reloaded";
                 return new SaveEntityCommand<ExampleVersion_T_DemoTable>(reloaded);
-            })
-            .ActAndAssert((result, ah) =>
-            {
-                Assert.Equal(Constants.NoAction, result.Data.Action);
             });
+        Assert.Throws<ConcurrencyException>(() => builder.Act());
     }
 }

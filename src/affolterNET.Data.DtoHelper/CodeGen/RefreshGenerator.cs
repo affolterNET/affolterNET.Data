@@ -8,17 +8,17 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 {
     public class RefreshGenerator
     {
-        private readonly Table tbl;
+        private readonly Table _tbl;
 
         public RefreshGenerator(Table tbl)
         {
-            this.tbl = tbl;
+            _tbl = tbl;
         }
 
         public void Generate(Action<MemberDeclarationSyntax> add)
         {
             var columnsBuilder = new StringBuilder();
-            foreach (var c in tbl.Columns)
+            foreach (var c in _tbl.Columns)
             {
                 if (c.IsPK)
                 {
@@ -31,8 +31,8 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
             var sgGetFromDb = new StringGenerator(
                 $@"
-                public {tbl.ObjectName}? GetFromDb(IDbConnection conn, IDbTransaction trsact) {{
-                    return conn.QueryFirstOrDefault<{tbl.ObjectName}>(this.GetSelectCommand(1), this, trsact);
+                public {_tbl.ObjectName}? GetFromDb(IDbConnection connection, IDbTransaction transaction) {{
+                    return connection.QueryFirstOrDefault<{_tbl.ObjectName}>(this.GetSelectCommand(1), this, transaction);
                 }}
 
             ");
@@ -40,8 +40,8 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
             var sgReload = new StringGenerator(
                 $@"
-                public void Reload(IDbConnection conn, IDbTransaction trsact) {{
-                    var loaded = this.GetFromDb(conn, trsact);
+                public void Reload(IDbConnection connection, IDbTransaction transaction) {{
+                    var loaded = this.GetFromDb(connection, transaction);
                     if (loaded == null) {{ throw new InvalidOperationException(""entity not found""); }}
                     {columns}
                 }}

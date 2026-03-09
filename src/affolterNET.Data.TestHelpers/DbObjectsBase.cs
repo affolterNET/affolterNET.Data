@@ -91,33 +91,5 @@ namespace affolterNET.Data.TestHelpers
             return o!;
         }
 
-        [Obsolete("please use \"Set\"")]
-        protected T GetSet<T>(Func<T> create, string name)
-            where T : class
-        {
-            if (name == null) throw new InvalidOperationException("you have to give it a name");
-
-            var added = false;
-            if (!_dbobjects.ContainsKey(name))
-            {
-                var obj = create();
-
-                WriteLine($"created: " + JsonConvert.SerializeObject(obj));
-
-                // nochmals fragen - ein anderes create könnte das objekt schon erstellt haben
-                if (!_dbobjects.ContainsKey(name))
-                {
-                    _dbobjects.Add(name, obj);
-                    added = true;
-                }
-            }
-
-            WriteLine($"\"{name}\" added: {added}");
-
-            var o = _dbobjects[name] as T;
-            o.Should().NotBeNull(
-                $"Unter dem Namen \"{name}\" wurde bereits ein Objekt vom Typ \"{_dbobjects[name].GetType().FullName}\" hinzugefügt (aktuell: {typeof(T).FullName})");
-            return o!;
-        }
     }
 }

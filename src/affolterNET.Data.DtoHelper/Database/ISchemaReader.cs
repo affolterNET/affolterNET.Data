@@ -6,5 +6,5 @@ namespace affolterNET.Data.DtoHelper.Database;
 
 public interface ISchemaReader
 {
-    Tables ReadSchema(IDbConnection cn, GeneratorCfg cfg, ISqlDialect dialect);
+    Tables ReadSchema(IDbConnection connection, GeneratorCfg cfg, ISqlDialect dialect);
 }

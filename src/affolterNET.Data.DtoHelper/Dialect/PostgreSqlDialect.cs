@@ -38,7 +38,13 @@ public class PostgreSqlDialect : ISqlDialect
         return $"{schema}.{table}";
     }
 
-    public string FormatColumnNameConstant(string dbColumnName) => $"\"\"{dbColumnName}\"\"";
+    public string FormatColumnNameConstant(string dbColumnName) => $"\\\"{dbColumnName}\\\"";
+
+    public string FormatNullableWhereClause(string paramName, string quotedColumnName, string? dataType)
+    {
+        var pgType = dataType ?? "text";
+        return $"(@{paramName}::{pgType} is null or {quotedColumnName}=@{paramName})";
+    }
 
     public string FormatSelectTop(string cols, string tableName, string where, int maxCount)
     {
@@ -50,52 +56,46 @@ public class PostgreSqlDialect : ISqlDialect
         return $" returning \"{pkColumn}\" as id";
     }
 
-    public string FormatSaveById(
-        string tableName,
-        string pkColumn,
-        string updateCall,
-        string insertCall,
-        string selectCall,
-        string pkParamName,
-        bool hasAutoIncrementPk,
-        bool hasSelect)
+    public string FormatSaveById(SaveByIdParams p)
     {
         // Extract schema/table for result set
         string schema;
         string table;
-        if (tableName.Contains("."))
+        if (p.TableName.Contains("."))
         {
-            var parts = tableName.Split('.');
+            var parts = p.TableName.Split('.');
             schema = parts[0].Trim('"');
             table = parts[1].Trim('"');
         }
         else
         {
             schema = "public";
-            table = tableName.Trim('"');
+            table = p.TableName.Trim('"');
         }
 
-        // PostgreSQL uses INSERT ... ON CONFLICT ... DO UPDATE ... RETURNING with xmax trick
-        // But since we delegate to GetInsertCommand/GetUpdateCommand, we use a CTE approach
-        // that's compatible with the existing method structure.
-        // We use a PL/pgSQL DO block approach via a single SQL statement.
-        return $@"return
+        // PostgreSQL CTE upsert: INSERT must use SELECT syntax (not VALUES) to support WHERE NOT EXISTS.
+        // We transform the INSERT command at runtime by replacing "values (" with "select " and removing the trailing ")".
+        return $@"
+                        var insertSql = {p.InsertCall};
+                        var insertAsSelect = insertSql.Replace(""values ("", ""select "").TrimEnd(')');
+                        return
                         @$""
                         WITH upsert AS (
-                            {{{updateCall}}} RETURNING *
+                            {{{p.UpdateCall}}} RETURNING *
                         ), inserted AS (
-                            {{{insertCall}}}
+                            {{insertAsSelect}}
                             WHERE NOT EXISTS (SELECT 1 FROM upsert)
+                            ON CONFLICT (""""{p.PkColumn}"""") DO NOTHING
                             RETURNING *
                         )
                         SELECT '{schema}' AS """"Schema"""", '{table}' AS """"Table"""",
-                            {pkParamName}::text AS """"Id"""",
+                            @{p.PkParamName}::text AS """"Id"""",
                             CASE
                                 WHEN EXISTS (SELECT 1 FROM upsert) THEN '{{Constants.Updated}}'
                                 WHEN EXISTS (SELECT 1 FROM inserted) THEN '{{Constants.Inserted}}'
                                 ELSE '{{Constants.NoAction}}'
                             END AS """"Action"""";
-                        {{{selectCall}}}"";";
+                        {{{p.SelectCall}}}"";";
     }
 
     public string FormatCastToString(string param)

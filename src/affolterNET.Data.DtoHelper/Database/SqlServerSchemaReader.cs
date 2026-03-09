@@ -9,7 +9,7 @@ using affolterNET.Data.DtoHelper.Dialect;
 
 namespace affolterNET.Data.DtoHelper.Database
 {
-    public class SqlServerSchemaReader : ISchemaReader
+    public class SqlServerSchemaReader : SchemaReaderBase
     {
         private const string TableSql = @"SELECT *
 		FROM  INFORMATION_SCHEMA.TABLES
@@ -68,31 +68,27 @@ namespace affolterNET.Data.DtoHelper.Database
 		AND pt.referenced_object_id = rc.[object_id]
 		WHERE pt.referenced_object_id = OBJECT_ID(@tableName);";
 
-        // SchemaReader.ReadSchema
-        private readonly TextWriter tw;
+        private SqlConnection? _connection;
 
-        private SqlConnection? connection;
-
-        public SqlServerSchemaReader(TextWriter tw)
+        public SqlServerSchemaReader(TextWriter tw) : base(tw)
         {
-            this.tw = tw;
         }
 
-        public Tables ReadSchema(IDbConnection cn, GeneratorCfg cfg, ISqlDialect dialect)
+        public override Tables ReadSchema(IDbConnection connection, GeneratorCfg cfg, ISqlDialect dialect)
         {
-            var sqlCn = (SqlConnection)cn;
+            var sqlCn = (SqlConnection)connection;
             return ReadSchema(sqlCn, cfg, dialect);
         }
 
-        private Tables ReadSchema(SqlConnection cn, GeneratorCfg cfg, ISqlDialect dialect)
+        private Tables ReadSchema(SqlConnection connection, GeneratorCfg cfg, ISqlDialect dialect)
         {
             var result = new Tables();
 
-            connection = cn;
+            _connection = connection;
 
             var cmd = new SqlCommand
             {
-                Connection = cn,
+                Connection = connection,
                 CommandText = TableSql
             };
 
@@ -123,8 +119,8 @@ namespace affolterNET.Data.DtoHelper.Database
 
             foreach (var tbl in result)
             {
-                LoadColumns(cn, tbl, cfg, dialect);
-                MarkPrimaryKeys(cn, tbl);
+                LoadColumns(connection, tbl, cfg, dialect);
+                MarkPrimaryKeys(connection, tbl);
 
                 try
                 {
@@ -133,25 +129,18 @@ namespace affolterNET.Data.DtoHelper.Database
                 }
                 catch (Exception x)
                 {
-                    var error = x.Message.Replace("\r\n", "\n").Replace("\n", " ");
-                    tw.WriteLine(string.Empty);
-                    tw.WriteLine(
-                        "// -----------------------------------------------------------------------------------------");
-                    tw.WriteLine("// Failed to get relationships for `{0}` - {1}", tbl.Name, error);
-                    tw.WriteLine(
-                        "// -----------------------------------------------------------------------------------------");
-                    tw.WriteLine(string.Empty);
+                    LogRelationshipError(tbl.Name, x);
                 }
             }
 
             return result;
         }
 
-        private void LoadColumns(SqlConnection cn, Table tbl, GeneratorCfg cfg, ISqlDialect dialect)
+        private void LoadColumns(SqlConnection connection, Table tbl, GeneratorCfg cfg, ISqlDialect dialect)
         {
             tbl.AllColumns.Clear();
             using var cmd = new SqlCommand();
-            cmd.Connection = cn;
+            cmd.Connection = connection;
             cmd.CommandText = ColumnSql;
 
             var p = cmd.CreateParameter();
@@ -193,9 +182,9 @@ namespace affolterNET.Data.DtoHelper.Database
             }
         }
 
-        private void MarkPrimaryKeys(SqlConnection cn, Table tbl)
+        private void MarkPrimaryKeys(SqlConnection connection, Table tbl)
         {
-            var primaryKeys = GetPk(cn, tbl.Name);
+            var primaryKeys = GetPk(connection, tbl.Name);
 
             foreach (var primaryKey in primaryKeys)
             {
@@ -207,12 +196,12 @@ namespace affolterNET.Data.DtoHelper.Database
             }
         }
 
-        private string[] GetPk(SqlConnection cn, string tableName)
+        private string[] GetPk(SqlConnection connection, string tableName)
         {
             var primaryKeys = new List<string>();
 
             using var cmd = new SqlCommand();
-            cmd.Connection = cn;
+            cmd.Connection = connection;
             cmd.CommandText = GetPkSql;
 
             var p = cmd.CreateParameter();
@@ -232,22 +221,11 @@ namespace affolterNET.Data.DtoHelper.Database
             return primaryKeys.ToArray();
         }
 
-        private void FixPropertyNames(List<Key> result)
-        {
-            foreach (var key in result)
-            {
-                if (result.Count(k => k.PropertyName == key.PropertyName) > 1)
-                {
-                    key.PropertyName = key.Name;
-                }
-            }
-        }
-
         private void LoadInnerKeys(Table tbl)
         {
             using (var cmd = new SqlCommand())
             {
-                cmd.Connection = connection;
+                cmd.Connection = _connection;
                 cmd.CommandText = InnerKeysSql;
 
                 var p = cmd.CreateParameter();
@@ -287,7 +265,7 @@ namespace affolterNET.Data.DtoHelper.Database
         {
             using (var cmd = new SqlCommand())
             {
-                cmd.Connection = connection;
+                cmd.Connection = _connection;
                 cmd.CommandText = OuterKeysSql;
 
                 var p = cmd.CreateParameter();
@@ -322,17 +300,6 @@ namespace affolterNET.Data.DtoHelper.Database
                     tbl.OuterKeys.Add(key);
                 }
             }
-        }
-
-        private string RenameSchema(Table tbl, Dictionary<string, string> schemaRenames)
-        {
-            var rename = schemaRenames.Where(s => s.Key == tbl.Schema).Select(s => s.Value).SingleOrDefault();
-            if (string.IsNullOrWhiteSpace(rename))
-            {
-                rename = tbl.Schema;
-            }
-
-            return $"{rename}_{tbl.Name}";
         }
     }
 }

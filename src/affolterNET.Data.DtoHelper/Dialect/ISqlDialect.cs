@@ -17,17 +17,10 @@ public interface ISqlDialect
     string FormatColumnNameConstant(string dbColumnName);
 
     // SQL generation
+    string FormatNullableWhereClause(string paramName, string quotedColumnName, string? dataType);
     string FormatSelectTop(string cols, string tableName, string where, int maxCount);
     string FormatInsertReturning(string pkColumn);
-    string FormatSaveById(
-        string tableName,
-        string pkColumn,
-        string updateCall,
-        string insertCall,
-        string selectCall,
-        string pkParamName,
-        bool hasAutoIncrementPk,
-        bool hasSelect);
+    string FormatSaveById(SaveByIdParams p);
     string FormatCastToString(string param);
 
     // Name cleaning

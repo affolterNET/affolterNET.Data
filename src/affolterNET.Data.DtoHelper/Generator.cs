@@ -47,7 +47,7 @@ namespace affolterNET.Data.DtoHelper
             WriteTargetFile();
         }
 
-        private TablesResultat LoadTables()
+        private TablesResult LoadTables()
         {
             var res = _tl.LoadTables();
             if ((res.Error != null) || (res.Ex != null))
@@ -98,7 +98,7 @@ namespace affolterNET.Data.DtoHelper
             _ns = _ns.WithLeadingTrivia(comm);
         }
 
-        private void FillStatics(TablesResultat tr)
+        private void FillStatics(TablesResult tr)
         {
             var staticsBuilder = new StringBuilder();
             var staticsViewsBuilder = new StringBuilder();

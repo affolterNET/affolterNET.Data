@@ -8,19 +8,19 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 {
     public class ColumnNamesGenerator
     {
-        private readonly Table tbl;
-        private readonly ISqlDialect dialect;
+        private readonly Table _tbl;
+        private readonly ISqlDialect _dialect;
 
         public ColumnNamesGenerator(Table tbl, ISqlDialect dialect)
         {
-            this.tbl = tbl;
-            this.dialect = dialect;
+            _tbl = tbl;
+            _dialect = dialect;
         }
 
         public void Generate(Action<MemberDeclarationSyntax> add)
         {
-            var cols = tbl.Columns.Select(c => $"public const string {c.PropertyName} = \"{dialect.FormatColumnNameConstant(c.Name)}\";");
-            var allCols = string.Join("\", \"", tbl.Columns.Select(c => c.Name));
+            var cols = _tbl.Columns.Select(c => $"public const string {c.PropertyName} = \"{_dialect.FormatColumnNameConstant(c.Name)}\";");
+            var allCols = string.Join("\", \"", _tbl.Columns.Select(c => c.Name));
             var sg1 = new StringGenerator(
                 $@"
                 private static readonly List<string> colNames = new List<string> {{ ""{allCols}"" }};

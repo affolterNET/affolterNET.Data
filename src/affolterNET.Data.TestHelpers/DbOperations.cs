@@ -15,10 +15,10 @@ namespace affolterNET.Data.TestHelpers
         public readonly IDbConnection Connection;
         public readonly IDbTransaction Transaction;
 
-        public DbOperations(IDbConnection conn, IDbTransaction trsact, IDtoFactory dtoFactory)
+        public DbOperations(IDbConnection connection, IDbTransaction transaction, IDtoFactory dtoFactory)
         {
-            Connection = conn;
-            Transaction = trsact;
+            Connection = connection;
+            Transaction = transaction;
             _dtoFactory = dtoFactory;
         }
 

@@ -7,11 +7,11 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 {
     public class PropertyGenerator
     {
-        private readonly Column col;
+        private readonly Column _col;
 
         public PropertyGenerator(Column col)
         {
-            this.col = col;
+            _col = col;
         }
 
         private AccessorDeclarationSyntax GetAccessor()
@@ -28,23 +28,23 @@ namespace affolterNET.Data.DtoHelper.CodeGen
 
         public PropertyDeclarationSyntax Generate()
         {
-            if (string.IsNullOrWhiteSpace(col.PropertyType))
+            if (string.IsNullOrWhiteSpace(_col.PropertyType))
             {
-                throw new InvalidOperationException($"{nameof(col.PropertyType)} was empty");
+                throw new InvalidOperationException($"{nameof(_col.PropertyType)} was empty");
             }
 
-            var type = SyntaxFactory.ParseTypeName(col.PropertyType);
-            if (string.IsNullOrWhiteSpace(col.PropertyName))
+            var type = SyntaxFactory.ParseTypeName(_col.PropertyType);
+            if (string.IsNullOrWhiteSpace(_col.PropertyName))
             {
-                throw new InvalidOperationException($"{nameof(col.PropertyName)} was empty");
+                throw new InvalidOperationException($"{nameof(_col.PropertyName)} was empty");
             }
-            var name = col.PropertyName;
+            var name = _col.PropertyName;
             var propertyDeclaration = SyntaxFactory.PropertyDeclaration(type, name)
                 .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
                 .AddAccessorListAccessors(GetAccessor(), SetAccessor());
 
             // primary key
-            if (col.IsPK)
+            if (_col.IsPK)
             {
                 propertyDeclaration = propertyDeclaration.WithAttributeLists(
                     SyntaxFactory.SingletonList(
